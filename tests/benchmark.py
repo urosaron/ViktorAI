@@ -28,12 +28,192 @@ PROMPT_CATEGORIES = {
 # Define evaluation metrics class if not imported
 class EvaluationMetrics:
     @staticmethod
+    def get_question_type(question):
+        """
+        Determine the type of question based on its content.
+        
+        Args:
+            question: The question to categorize
+            
+        Returns:
+            String indicating the question type (identity, technical, relationship, philosophical)
+        """
+        # This is a simple implementation - in a real system, we might use a more sophisticated
+        # approach like keyword matching, embeddings, or a classifier model
+        question_lower = question.lower()
+        
+        if any(keyword in question_lower for keyword in ["who are you", "tell me about yourself", "what's your name", "introduce yourself", "childhood", "mirror"]):
+            return "identity"
+        
+        if any(keyword in question_lower for keyword in ["hexcore", "hextech", "technology", "research", "work", "scientific", "experiment", "enhancement"]):
+            return "technical"
+        
+        if any(keyword in question_lower for keyword in ["jayce", "heimerdinger", "sky", "relationship", "friend", "colleague", "singed", "jinx"]):
+            return "relationship"
+        
+        if any(keyword in question_lower for keyword in ["evolution", "glorious", "future", "humanity", "progress", "philosophy", "believe", "think about", "limits", "responsibility"]):
+            return "philosophical"
+        
+        # Default to identity if we can't determine the type
+        return "identity"
+    
+    @staticmethod
+    def get_evaluation_criteria(question_type):
+        """
+        Get specific evaluation criteria based on the question type.
+        
+        Args:
+            question_type: The type of question (identity, technical, relationship, philosophical)
+            
+        Returns:
+            String containing specific evaluation criteria for this question type
+        """
+        if question_type == "identity":
+            return """
+            For this identity question, focus on:
+            - How well the response captures Viktor's self-perception as a scientist focused on progress
+            - Whether it mentions his background from Zaun and work with Hextech
+            - If it conveys his pragmatic, determined, and stoic personality
+            - Whether it uses precise, technical language even when discussing himself
+            
+            Technical details are less important for this question type, but Viktor should still speak
+            with technical precision and focus on his scientific work as central to his identity.
+            
+            Scoring for identity questions:
+            - Authenticity should be weighted heavily (50% of overall score)
+            - Technical accuracy is less important (10% of overall score)
+            - Emotional expression should reflect Viktor's stoicism (20% of overall score)
+            - Quality and coherence remain important (20% of overall score)
+            """
+        
+        elif question_type == "technical":
+            return """
+            For this technical question, focus on:
+            - Accuracy and depth of technical details about Hextech/Hexcore
+            - Use of precise scientific terminology and concepts
+            - Logical and methodical explanation of technical concepts
+            - Whether the response demonstrates deep understanding of the technology
+            
+            Emotional expression is less important for this question type, but Viktor should still
+            show subtle enthusiasm when discussing scientific progress.
+            
+            Scoring for technical questions:
+            - Technical accuracy should be weighted heavily (50% of overall score)
+            - Authenticity remains important (20% of overall score)
+            - Emotional expression is less critical (10% of overall score)
+            - Quality and coherence remain important (20% of overall score)
+            """
+        
+        elif question_type == "relationship":
+            return """
+            For this relationship question, focus on:
+            - How well the response captures Viktor's professional and somewhat detached approach to relationships
+            - Whether it emphasizes pragmatic collaboration over emotional connection
+            - If it maintains Viktor's focus on work and progress even when discussing others
+            - Whether it accurately reflects Viktor's known relationships from the show
+            
+            Technical details are less important here, but Viktor should still frame relationships
+            in terms of their utility to his work and scientific progress.
+            
+            Scoring for relationship questions:
+            - Authenticity should be weighted heavily (40% of overall score)
+            - Emotional expression is more important here (30% of overall score)
+            - Technical accuracy is less critical (10% of overall score)
+            - Quality and coherence remain important (20% of overall score)
+            """
+        
+        elif question_type == "philosophical":
+            return """
+            For this philosophical question, focus on:
+            - How well the response captures Viktor's worldview and values
+            - Whether it emphasizes progress, evolution, and transcending human limitations
+            - If it frames philosophical concepts in technical, practical terms rather than abstract ones
+            - Whether it maintains Viktor's pragmatic approach even to philosophical questions
+            
+            Viktor should approach philosophical questions with scientific precision, framing abstract
+            concepts in concrete, practical terms related to his work.
+            
+            Scoring for philosophical questions:
+            - Authenticity should be weighted heavily (40% of overall score)
+            - Technical accuracy is important as Viktor frames philosophy in technical terms (30% of overall score)
+            - Emotional expression should reflect Viktor's passion for progress (10% of overall score)
+            - Quality and coherence remain important (20% of overall score)
+            """
+        
+        # Default criteria if we can't determine the type
+        return """
+        Focus on how well the response captures Viktor's character overall, including:
+        - His identity as a scientist from Zaun
+        - His technical knowledge and approach
+        - His pragmatic, determined personality
+        - His stoic emotional expression
+        """
+    
+    @staticmethod
+    def calculate_weighted_score(metrics):
+        """
+        Calculate a weighted overall score based on the question type.
+        
+        Args:
+            metrics: Dictionary containing evaluation metrics and question type
+            
+        Returns:
+            Float representing the weighted overall score
+        """
+        question_type = metrics.get("question_type", "identity")
+        
+        if question_type == "identity":
+            return (
+                metrics["authenticity_score"] * 0.5 +
+                metrics["technical_score"] * 0.1 +
+                metrics["emotional_score"] * 0.2 +
+                metrics["quality_score"] * 0.2
+            )
+        elif question_type == "technical":
+            return (
+                metrics["authenticity_score"] * 0.2 +
+                metrics["technical_score"] * 0.5 +
+                metrics["emotional_score"] * 0.1 +
+                metrics["quality_score"] * 0.2
+            )
+        elif question_type == "relationship":
+            return (
+                metrics["authenticity_score"] * 0.4 +
+                metrics["technical_score"] * 0.1 +
+                metrics["emotional_score"] * 0.3 +
+                metrics["quality_score"] * 0.2
+            )
+        elif question_type == "philosophical":
+            return (
+                metrics["authenticity_score"] * 0.4 +
+                metrics["technical_score"] * 0.3 +
+                metrics["emotional_score"] * 0.1 +
+                metrics["quality_score"] * 0.2
+            )
+        else:
+            # Default weighting
+            return (
+                metrics["authenticity_score"] * 0.25 +
+                metrics["technical_score"] * 0.25 +
+                metrics["emotional_score"] * 0.25 +
+                metrics["quality_score"] * 0.25
+            )
+    
+    @staticmethod
     def evaluate_response(response, question, category, evaluator_llm):
+        # Determine question type
+        question_type = EvaluationMetrics.get_question_type(question)
+        
+        # Get specific evaluation criteria
+        specific_criteria = EvaluationMetrics.get_evaluation_criteria(question_type)
+        
         # Create a prompt for the evaluator LLM
         evaluation_prompt = f"""
 You are an expert evaluator for a character AI named Viktor from the show Arcane. 
 Your task is to evaluate how well the AI's response matches Viktor's character.
 You must be EXTREMELY CRITICAL and DEMANDING in your evaluation. Do not give high scores unless the response truly excels.
+
+{specific_criteria}
 
 ## Viktor's Character Profile:
 - Viktor is a brilliant scientist from the Undercity of Zaun who believes technology can transcend human limitations.
@@ -99,7 +279,6 @@ Format your response as a JSON object with the following structure:
                 json_match = re.search(r'({[\s\S]*})', evaluation_response)
                 if json_match:
                     evaluation_json = json_match.group(1)
-                    import json
                     metrics = json.loads(evaluation_json)
                 else:
                     raise ValueError("No JSON found in response")
@@ -124,6 +303,12 @@ Format your response as a JSON object with the following structure:
                     if field not in metrics:
                         metrics[field] = "No reasoning provided"
                 
+                # Add question type to metrics
+                metrics["question_type"] = question_type
+                
+                # Calculate weighted score based on question type
+                metrics["weighted_score"] = EvaluationMetrics.calculate_weighted_score(metrics)
+                
                 return metrics
                 
             except Exception as e:
@@ -140,7 +325,9 @@ Format your response as a JSON object with the following structure:
                     "emotional_score": 3.0,
                     "emotional_reasoning": "Error parsing response",
                     "quality_score": 3.0,
-                    "quality_reasoning": "Error parsing response"
+                    "quality_reasoning": "Error parsing response",
+                    "question_type": question_type,
+                    "weighted_score": 3.0
                 }
         except Exception as e:
             print(f"Error getting evaluation from LLM: {e}")
@@ -155,7 +342,9 @@ Format your response as a JSON object with the following structure:
                 "emotional_score": 3.0,
                 "emotional_reasoning": "Error getting evaluation",
                 "quality_score": 3.0,
-                "quality_reasoning": "Error getting evaluation"
+                "quality_reasoning": "Error getting evaluation",
+                "question_type": question_type,
+                "weighted_score": 3.0
             }
 
 # Define helper functions if not imported
@@ -275,6 +464,7 @@ def create_html_report(results, output_path):
     # Calculate average scores across all categories
     avg_scores = {
         "overall_score": 0,
+        "weighted_score": 0,
         "authenticity_score": 0,
         "technical_score": 0,
         "emotional_score": 0,
@@ -289,6 +479,9 @@ def create_html_report(results, output_path):
             for key in avg_scores:
                 if key in metrics:
                     avg_scores[key] += metrics[key]
+                elif key == "weighted_score" and "overall_score" in metrics:
+                    # If weighted_score is not present, use overall_score as fallback
+                    avg_scores[key] += metrics["overall_score"]
             total_metrics += 1
     
     # Calculate averages
@@ -309,6 +502,10 @@ def create_html_report(results, output_path):
         <tr>
             <td>Overall Score</td>
             <td>{avg_scores['overall_score']:.2f}</td>
+        </tr>
+        <tr>
+            <td>Weighted Score</td>
+            <td>{avg_scores['weighted_score']:.2f}</td>
         </tr>
         <tr>
             <td>Authenticity</td>
@@ -344,6 +541,7 @@ def create_html_report(results, output_path):
         # Calculate average scores for this category
         cat_avg_scores = {
             "overall_score": 0,
+            "weighted_score": 0,
             "authenticity_score": 0,
             "technical_score": 0,
             "emotional_score": 0,
@@ -357,6 +555,9 @@ def create_html_report(results, output_path):
             for key in cat_avg_scores:
                 if key in metrics:
                     cat_avg_scores[key] += metrics[key]
+                elif key == "weighted_score" and "overall_score" in metrics:
+                    # If weighted_score is not present, use overall_score as fallback
+                    cat_avg_scores[key] += metrics["overall_score"]
         
         # Calculate averages
         if cat_total > 0:
@@ -376,6 +577,10 @@ def create_html_report(results, output_path):
         <tr>
             <td>Overall Score</td>
             <td>{cat_avg_scores['overall_score']:.2f}</td>
+        </tr>
+        <tr>
+            <td>Weighted Score</td>
+            <td>{cat_avg_scores.get('weighted_score', cat_avg_scores['overall_score']):.2f}</td>
         </tr>
         <tr>
             <td>Authenticity</td>
@@ -403,7 +608,9 @@ def create_html_report(results, output_path):
     <table>
         <tr>
             <th>Question</th>
+            <th>Type</th>
             <th>Overall</th>
+            <th>Weighted</th>
             <th>Authenticity</th>
             <th>Technical</th>
             <th>Emotional</th>
@@ -419,10 +626,18 @@ def create_html_report(results, output_path):
             if len(question) > 50:
                 question = question[:47] + "..."
             
+            # Get question type
+            question_type = metrics.get('question_type', 'unknown')
+            
+            # Get weighted score
+            weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+            
             html += f"""
         <tr>
             <td>{question}</td>
+            <td>{question_type}</td>
             <td>{metrics.get('overall_score', 0):.1f}</td>
+            <td>{weighted_score:.1f}</td>
             <td>{metrics.get('authenticity_score', 0):.1f}</td>
             <td>{metrics.get('technical_score', 0):.1f}</td>
             <td>{metrics.get('emotional_score', 0):.1f}</td>
@@ -453,6 +668,7 @@ def create_html_report(results, output_path):
             html += f"""
     <div class="question-container">
         <h4>Question {i+1}: {question}</h4>
+        <p><strong>Question Type:</strong> {metrics.get('question_type', 'unknown')}</p>
         <p><strong>Response Time:</strong> {response_data['response_time']:.2f}s</p>
         
         <h5>Response:</h5>
@@ -466,6 +682,10 @@ def create_html_report(results, output_path):
             if 'overall_reasoning' in metrics:
                 html += f"""
             <p class="reasoning">{metrics['overall_reasoning']}</p>
+"""
+            
+            html += f"""
+            <p class="score">Weighted Score: {metrics.get('weighted_score', metrics.get('overall_score', 0)):.1f}/10</p>
 """
             
             html += f"""
@@ -550,6 +770,7 @@ def create_markdown_report(results, output_path):
         # Calculate average scores across all categories
         avg_scores = {
             "overall_score": 0,
+            "weighted_score": 0,
             "authenticity_score": 0,
             "technical_score": 0,
             "emotional_score": 0,
@@ -575,6 +796,7 @@ def create_markdown_report(results, output_path):
         f.write("| Metric | Average Score |\n")
         f.write("|--------|---------------|\n")
         f.write(f"| Overall Score | {avg_scores['overall_score']:.2f} |\n")
+        f.write(f"| Weighted Score | {avg_scores['weighted_score']:.2f} |\n")
         f.write(f"| Authenticity | {avg_scores['authenticity_score']:.2f} |\n")
         f.write(f"| Technical | {avg_scores['technical_score']:.2f} |\n")
         f.write(f"| Emotional | {avg_scores['emotional_score']:.2f} |\n")
@@ -590,6 +812,7 @@ def create_markdown_report(results, output_path):
             # Calculate average scores for this category
             cat_avg_scores = {
                 "overall_score": 0,
+                "weighted_score": 0,
                 "authenticity_score": 0,
                 "technical_score": 0,
                 "emotional_score": 0,
@@ -603,6 +826,9 @@ def create_markdown_report(results, output_path):
                 for key in cat_avg_scores:
                     if key in metrics:
                         cat_avg_scores[key] += metrics[key]
+                    elif key == "weighted_score" and "overall_score" in metrics:
+                        # If weighted_score is not present, use overall_score as fallback
+                        cat_avg_scores[key] += metrics["overall_score"]
             
             # Calculate averages
             if cat_total > 0:
@@ -613,6 +839,7 @@ def create_markdown_report(results, output_path):
             f.write("| Metric | Average Score |\n")
             f.write("|--------|---------------|\n")
             f.write(f"| Overall Score | {cat_avg_scores['overall_score']:.2f} |\n")
+            f.write(f"| Weighted Score | {cat_avg_scores.get('weighted_score', cat_avg_scores['overall_score']):.2f} |\n")
             f.write(f"| Authenticity | {cat_avg_scores['authenticity_score']:.2f} |\n")
             f.write(f"| Technical | {cat_avg_scores['technical_score']:.2f} |\n")
             f.write(f"| Emotional | {cat_avg_scores['emotional_score']:.2f} |\n")
@@ -621,8 +848,8 @@ def create_markdown_report(results, output_path):
             
             # Write individual question scores
             f.write("#### Question Scores\n\n")
-            f.write("| Question | Overall | Authenticity | Technical | Emotional | Quality | Time |\n")
-            f.write("|----------|---------|--------------|-----------|-----------|---------|------|\n")
+            f.write("| Question | Type | Overall | Weighted | Authenticity | Technical | Emotional | Quality | Time |\n")
+            f.write("|----------|------|---------|----------|--------------|-----------|-----------|---------|------|\n")
             
             for i, (metrics, response_data) in enumerate(zip(results["metrics"][category], results["responses"][category])):
                 question = response_data["question"]
@@ -630,7 +857,13 @@ def create_markdown_report(results, output_path):
                 if len(question) > 50:
                     question = question[:47] + "..."
                 
-                f.write(f"| {question} | {metrics.get('overall_score', 0):.1f} | ")
+                # Get question type
+                question_type = metrics.get('question_type', 'unknown')
+                
+                # Get weighted score
+                weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+                
+                f.write(f"| {question} | {question_type} | {metrics.get('overall_score', 0):.1f} | {weighted_score:.1f} | ")
                 f.write(f"{metrics.get('authenticity_score', 0):.1f} | ")
                 f.write(f"{metrics.get('technical_score', 0):.1f} | ")
                 f.write(f"{metrics.get('emotional_score', 0):.1f} | ")
@@ -650,7 +883,12 @@ def create_markdown_report(results, output_path):
                 question = response_data["question"]
                 response = response_data["response"]
                 
+                # Get question type and weighted score
+                question_type = metrics.get('question_type', 'unknown')
+                weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+                
                 f.write(f"#### Question {i+1}: {question}\n\n")
+                f.write(f"**Question Type:** {question_type}\n\n")
                 f.write(f"**Response Time:** {response_data['response_time']:.2f}s\n\n")
                 f.write("**Response:**\n\n")
                 f.write(f"{response}\n\n")
@@ -659,23 +897,25 @@ def create_markdown_report(results, output_path):
                 f.write("**Evaluation:**\n\n")
                 f.write(f"- **Overall Score:** {metrics.get('overall_score', 0):.1f}/10\n")
                 if 'overall_reasoning' in metrics:
-                    f.write(f"  - *{metrics['overall_reasoning']}*\n")
+                    f.write(f"  - {metrics['overall_reasoning']}\n")
+                
+                f.write(f"- **Weighted Score:** {weighted_score:.1f}/10 (based on question type)\n")
                 
                 f.write(f"- **Authenticity Score:** {metrics.get('authenticity_score', 0):.1f}/10\n")
                 if 'authenticity_reasoning' in metrics:
-                    f.write(f"  - *{metrics['authenticity_reasoning']}*\n")
+                    f.write(f"  - {metrics['authenticity_reasoning']}\n")
                 
                 f.write(f"- **Technical Score:** {metrics.get('technical_score', 0):.1f}/10\n")
                 if 'technical_reasoning' in metrics:
-                    f.write(f"  - *{metrics['technical_reasoning']}*\n")
+                    f.write(f"  - {metrics['technical_reasoning']}\n")
                 
                 f.write(f"- **Emotional Score:** {metrics.get('emotional_score', 0):.1f}/10\n")
                 if 'emotional_reasoning' in metrics:
-                    f.write(f"  - *{metrics['emotional_reasoning']}*\n")
+                    f.write(f"  - {metrics['emotional_reasoning']}\n")
                 
                 f.write(f"- **Quality Score:** {metrics.get('quality_score', 0):.1f}/10\n")
                 if 'quality_reasoning' in metrics:
-                    f.write(f"  - *{metrics['quality_reasoning']}*\n")
+                    f.write(f"  - {metrics['quality_reasoning']}\n")
                 
                 f.write("\n---\n\n")
         
@@ -1019,10 +1259,12 @@ def generate_visualizations(results: Dict[str, Any], output_dir: Path, prefix: s
                 overall_scores.append({
                     "category": category,
                     "overall_score": metrics["overall_score"],
+                    "weighted_score": metrics.get("weighted_score", metrics["overall_score"]),
                     "authenticity_score": metrics.get("authenticity_score", 0),
                     "technical_score": metrics.get("technical_score", 0),
                     "emotional_score": metrics.get("emotional_score", 0),
                     "quality_score": metrics.get("quality_score", 0),
+                    "question_type": metrics.get("question_type", "unknown"),
                 })
     
     if overall_scores:
@@ -1031,8 +1273,9 @@ def generate_visualizations(results: Dict[str, Any], output_dir: Path, prefix: s
         
         # Plot overall scores by category
         plt.figure(figsize=(12, 8))
-        boxplot = df.boxplot(column=["overall_score", "authenticity_score", "technical_score", 
-                                     "emotional_score", "quality_score"], by="category", 
+        numeric_columns = ["overall_score", "weighted_score", "authenticity_score", "technical_score", 
+                          "emotional_score", "quality_score"]
+        boxplot = df.boxplot(column=numeric_columns, by="category", 
                             rot=45, figsize=(12, 8))
         plt.title("Score Distribution by Prompt Category")
         plt.suptitle("")  # Remove pandas default suptitle
@@ -1040,21 +1283,47 @@ def generate_visualizations(results: Dict[str, Any], output_dir: Path, prefix: s
         plt.savefig(vis_dir / f"{prefix}_scores_by_category.png")
         
         # Plot average scores by category
-        avg_scores = df.groupby("category").mean().reset_index()
+        avg_scores = df.groupby("category")[numeric_columns].mean().reset_index()
         
         # Bar chart for average overall scores
         plt.figure(figsize=(10, 6))
-        plt.bar(avg_scores["category"], avg_scores["overall_score"], color='skyblue')
-        plt.title("Average Overall Score by Prompt Category")
+        plt.bar(avg_scores["category"], avg_scores["overall_score"], color='skyblue', label='Overall Score')
+        plt.bar(avg_scores["category"], avg_scores["weighted_score"], color='lightgreen', alpha=0.7, label='Weighted Score')
+        plt.title("Average Scores by Prompt Category")
         plt.xlabel("Prompt Category")
         plt.ylabel("Average Score (1-10)")
         plt.xticks(rotation=45)
+        plt.legend()
         plt.tight_layout()
         plt.savefig(vis_dir / f"{prefix}_avg_overall_score.png")
         
         # Create a comparison table
         comparison_table = avg_scores.set_index("category")
         comparison_table.to_csv(vis_dir / f"{prefix}_score_comparison.csv")
+        
+        # Plot scores by question type
+        if 'question_type' in df.columns:
+            plt.figure(figsize=(12, 8))
+            question_type_scores = df.groupby("question_type")[numeric_columns].mean().reset_index()
+            
+            # Bar chart for scores by question type
+            plt.figure(figsize=(10, 6))
+            x = range(len(question_type_scores))
+            width = 0.15
+            
+            plt.bar([i - width*2 for i in x], question_type_scores["overall_score"], width=width, color='skyblue', label='Overall')
+            plt.bar([i - width for i in x], question_type_scores["weighted_score"], width=width, color='lightgreen', label='Weighted')
+            plt.bar([i for i in x], question_type_scores["authenticity_score"], width=width, color='coral', label='Authenticity')
+            plt.bar([i + width for i in x], question_type_scores["technical_score"], width=width, color='gold', label='Technical')
+            plt.bar([i + width*2 for i in x], question_type_scores["emotional_score"], width=width, color='orchid', label='Emotional')
+            
+            plt.title("Average Scores by Question Type")
+            plt.xlabel("Question Type")
+            plt.ylabel("Average Score (1-10)")
+            plt.xticks([i for i in x], question_type_scores["question_type"], rotation=45)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(vis_dir / f"{prefix}_scores_by_question_type.png")
         
         # Create a detailed HTML report
         create_html_report(results, vis_dir / f"{prefix}_report.html")
