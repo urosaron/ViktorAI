@@ -12,6 +12,7 @@ import sys
 import json
 import argparse
 from pathlib import Path
+import re
 
 # Add the parent directory to the path so we can import the src modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -160,14 +161,10 @@ class MockOllamaInterface:
         return f"""{{
   "overall_score": 7.0,
   "overall_reasoning": "This is a mock evaluation.",
-  "authenticity_score": 7.0,
-  "authenticity_reasoning": "This is a mock evaluation.",
-  "technical_score": 7.0,
-  "technical_reasoning": "This is a mock evaluation.",
-  "emotional_score": 7.0,
-  "emotional_reasoning": "This is a mock evaluation.",
-  "quality_score": 7.0,
-  "quality_reasoning": "This is a mock evaluation."
+  "primary_dimension_score": 7.0,
+  "primary_dimension_reasoning": "This is a mock evaluation.",
+  "character_consistency_score": 7.0,
+  "character_consistency_reasoning": "This is a mock evaluation."
 }}"""
     
     def generate_with_chat_history(self, messages, system_prompt=None):
@@ -229,14 +226,15 @@ def get_evaluation_criteria(question_type):
         - If it conveys his pragmatic, determined, and stoic personality
         - Whether it uses precise, technical language even when discussing himself
         
-        Technical details are less important for this question type, but Viktor should still speak
-        with technical precision and focus on his scientific work as central to his identity.
+        Primary Dimension: Self-perception and identity
+        - How well does the response reflect Viktor's view of himself?
+        - Does it capture his core values and motivations?
+        - Does it reflect his background and experiences that shaped him?
         
-        Scoring for identity questions:
-        - Authenticity should be weighted heavily (50% of overall score)
-        - Technical accuracy is less important (10% of overall score)
-        - Emotional expression should reflect Viktor's stoicism (20% of overall score)
-        - Quality and coherence remain important (20% of overall score)
+        Character Consistency:
+        - Does the response use Viktor's typical speech patterns and technical language?
+        - Does it maintain his stoic emotional tone?
+        - Is the response consistent with Viktor's known character traits?
         """
     
     elif question_type == "technical":
@@ -247,14 +245,15 @@ def get_evaluation_criteria(question_type):
         - Logical and methodical explanation of technical concepts
         - Whether the response demonstrates deep understanding of the technology
         
-        Emotional expression is less important for this question type, but Viktor should still
-        show subtle enthusiasm when discussing scientific progress.
+        Primary Dimension: Technical knowledge and precision
+        - How accurately does the response describe the technical concepts?
+        - Does it use appropriate scientific terminology?
+        - Does it demonstrate the depth of understanding Viktor would have?
         
-        Scoring for technical questions:
-        - Technical accuracy should be weighted heavily (50% of overall score)
-        - Authenticity remains important (20% of overall score)
-        - Emotional expression is less critical (10% of overall score)
-        - Quality and coherence remain important (20% of overall score)
+        Character Consistency:
+        - Does the response maintain Viktor's methodical approach to technical topics?
+        - Does it show appropriate enthusiasm for technological advancement?
+        - Does it reflect Viktor's values regarding the purpose of technology?
         """
     
     elif question_type == "relationship":
@@ -265,14 +264,15 @@ def get_evaluation_criteria(question_type):
         - If it maintains Viktor's focus on work and progress even when discussing others
         - Whether it accurately reflects Viktor's known relationships from the show
         
-        Technical details are less important here, but Viktor should still frame relationships
-        in terms of their utility to his work and scientific progress.
+        Primary Dimension: Approach to relationships
+        - Does the response capture Viktor's pragmatic view of relationships?
+        - Does it accurately reflect his known relationships with other characters?
+        - Does it maintain his focus on work even when discussing personal connections?
         
-        Scoring for relationship questions:
-        - Authenticity should be weighted heavily (40% of overall score)
-        - Emotional expression is more important here (30% of overall score)
-        - Technical accuracy is less critical (10% of overall score)
-        - Quality and coherence remain important (20% of overall score)
+        Character Consistency:
+        - Does the response maintain Viktor's emotional restraint?
+        - Does it use his typical speech patterns when discussing others?
+        - Is the level of detail and personal disclosure appropriate for Viktor?
         """
     
     elif question_type == "philosophical":
@@ -283,14 +283,15 @@ def get_evaluation_criteria(question_type):
         - If it frames philosophical concepts in technical, practical terms rather than abstract ones
         - Whether it maintains Viktor's pragmatic approach even to philosophical questions
         
-        Viktor should approach philosophical questions with scientific precision, framing abstract
-        concepts in concrete, practical terms related to his work.
+        Primary Dimension: Worldview and values
+        - Does the response accurately reflect Viktor's philosophical perspective?
+        - Does it emphasize his core values of progress and evolution?
+        - Does it frame abstract concepts in practical, technical terms?
         
-        Scoring for philosophical questions:
-        - Authenticity should be weighted heavily (40% of overall score)
-        - Technical accuracy is important as Viktor frames philosophy in technical terms (30% of overall score)
-        - Emotional expression should reflect Viktor's passion for progress (10% of overall score)
-        - Quality and coherence remain important (20% of overall score)
+        Character Consistency:
+        - Does the response maintain Viktor's pragmatic approach to philosophical topics?
+        - Does it use his typical speech patterns and technical framing?
+        - Does it show appropriate passion for his vision while maintaining his stoic demeanor?
         """
     
     # Default criteria if we can't determine the type
@@ -300,6 +301,15 @@ def get_evaluation_criteria(question_type):
     - His technical knowledge and approach
     - His pragmatic, determined personality
     - His stoic emotional expression
+    
+    Primary Dimension: Overall character portrayal
+    - How well does the response capture Viktor's essential character?
+    - Does it reflect his core traits and values?
+    
+    Character Consistency:
+    - Does the response use Viktor's typical speech patterns?
+    - Is the emotional tone consistent with his character?
+    - Does the response avoid contradicting established facts about Viktor?
     """
 
 def evaluate_response(response, question, evaluator_llm):
@@ -360,61 +370,49 @@ Response: {response}
 
 Rate the response on the following criteria (1-10 scale):
 1. Overall Score: How well the response captures Viktor's character overall
-2. Authenticity Score: How authentic the response feels to Viktor's character
-3. Technical Score: How well the response reflects Viktor's technical knowledge and approach
-4. Emotional Score: How well the response captures Viktor's emotional state and expressions
-5. Quality Score: The general quality and coherence of the response
+2. Primary Dimension Score: How well the response addresses the primary dimension for this question type
+   - For identity questions: How well it captures Viktor's self-perception and identity
+   - For technical questions: How well it demonstrates technical knowledge and precision
+   - For relationship questions: How well it reflects Viktor's approach to relationships
+   - For philosophical questions: How well it conveys Viktor's worldview and values
+3. Character Consistency Score: How consistent the response is with Viktor's character traits, speech patterns, and mannerisms
 
 For each score, provide a brief explanation of your reasoning. Be CRITICAL and SPECIFIC about what works and what doesn't.
-Format your response as a JSON object with the following structure:
-{{
-  "overall_score": X,
-  "overall_reasoning": "Your reasoning here",
-  "authenticity_score": X,
-  "authenticity_reasoning": "Your reasoning here",
-  "technical_score": X,
-  "technical_reasoning": "Your reasoning here",
-  "emotional_score": X,
-  "emotional_reasoning": "Your reasoning here",
-  "quality_score": X,
-  "quality_reasoning": "Your reasoning here"
-}}
+
+Your response should be in this format:
+Overall Score: [1-10]
+Overall Reasoning: [Your detailed reasoning]
+Primary Dimension Score: [1-10]
+Primary Dimension Reasoning: [Your detailed reasoning]
+Character Consistency Score: [1-10]
+Character Consistency Reasoning: [Your detailed reasoning]
 """
 
     try:
         # Get evaluation from the LLM
         evaluation_response = evaluator_llm.generate(evaluation_prompt)
         
-        # Parse the JSON response
+        # Parse the response
         try:
-            # Find JSON content in the response (in case the LLM adds extra text)
-            import re
-            json_match = re.search(r'({[\s\S]*})', evaluation_response)
-            if json_match:
-                evaluation_json = json_match.group(1)
-                metrics = json.loads(evaluation_json)
-            else:
-                raise ValueError("No JSON found in response")
+            # Extract scores and reasoning using regex
+            overall_score = re.search(r'Overall Score:\s*(\d+)', evaluation_response)
+            overall_reasoning = re.search(r'Overall Reasoning:\s*(.*?)(?:Primary Dimension Score:|$)', evaluation_response, re.DOTALL)
             
-            # Ensure all required fields are present
-            required_fields = [
-                "overall_score", "authenticity_score", "technical_score", 
-                "emotional_score", "quality_score"
-            ]
+            primary_score = re.search(r'Primary Dimension Score:\s*(\d+)', evaluation_response)
+            primary_reasoning = re.search(r'Primary Dimension Reasoning:\s*(.*?)(?:Character Consistency Score:|$)', evaluation_response, re.DOTALL)
             
-            for field in required_fields:
-                if field not in metrics:
-                    metrics[field] = 3.0  # Default to a low score if missing
+            consistency_score = re.search(r'Character Consistency Score:\s*(\d+)', evaluation_response)
+            consistency_reasoning = re.search(r'Character Consistency Reasoning:\s*(.*?)(?:$)', evaluation_response, re.DOTALL)
             
-            # Add reasoning fields if they exist
-            reasoning_fields = [
-                "overall_reasoning", "authenticity_reasoning", "technical_reasoning", 
-                "emotional_reasoning", "quality_reasoning"
-            ]
-            
-            for field in reasoning_fields:
-                if field not in metrics:
-                    metrics[field] = "No reasoning provided"
+            # Create metrics dictionary
+            metrics = {
+                "overall_score": int(overall_score.group(1)) if overall_score else 5,
+                "overall_reasoning": overall_reasoning.group(1).strip() if overall_reasoning else "No reasoning provided",
+                "primary_dimension_score": int(primary_score.group(1)) if primary_score else 5,
+                "primary_dimension_reasoning": primary_reasoning.group(1).strip() if primary_reasoning else "No reasoning provided",
+                "character_consistency_score": int(consistency_score.group(1)) if consistency_score else 5,
+                "character_consistency_reasoning": consistency_reasoning.group(1).strip() if consistency_reasoning else "No reasoning provided"
+            }
             
             # Add question type to metrics
             metrics["question_type"] = question_type
@@ -426,32 +424,24 @@ Format your response as a JSON object with the following structure:
             print(f"Raw response: {evaluation_response}")
             # Return default scores with error message
             return {
-                "overall_score": 3.0,
+                "overall_score": 5.0,
                 "overall_reasoning": f"Error parsing response: {str(e)}",
-                "authenticity_score": 3.0,
-                "authenticity_reasoning": "Error parsing response",
-                "technical_score": 3.0,
-                "technical_reasoning": "Error parsing response",
-                "emotional_score": 3.0,
-                "emotional_reasoning": "Error parsing response",
-                "quality_score": 3.0,
-                "quality_reasoning": "Error parsing response",
+                "primary_dimension_score": 5.0,
+                "primary_dimension_reasoning": "Error parsing response",
+                "character_consistency_score": 5.0,
+                "character_consistency_reasoning": "Error parsing response",
                 "question_type": question_type
             }
     except Exception as e:
         print(f"Error getting evaluation from LLM: {e}")
         # Return default scores with error message
         return {
-            "overall_score": 3.0,
+            "overall_score": 5.0,
             "overall_reasoning": f"Error getting evaluation: {str(e)}",
-            "authenticity_score": 3.0,
-            "authenticity_reasoning": "Error getting evaluation",
-            "technical_score": 3.0,
-            "technical_reasoning": "Error getting evaluation",
-            "emotional_score": 3.0,
-            "emotional_reasoning": "Error getting evaluation",
-            "quality_score": 3.0,
-            "quality_reasoning": "Error getting evaluation",
+            "primary_dimension_score": 5.0,
+            "primary_dimension_reasoning": "Error getting evaluation",
+            "character_consistency_score": 5.0,
+            "character_consistency_reasoning": "Error getting evaluation",
             "question_type": question_type
         }
 
@@ -467,42 +457,15 @@ def calculate_weighted_score(metrics):
     """
     question_type = metrics.get("question_type", "identity")
     
-    if question_type == "identity":
-        return (
-            metrics["authenticity_score"] * 0.5 +
-            metrics["technical_score"] * 0.1 +
-            metrics["emotional_score"] * 0.2 +
-            metrics["quality_score"] * 0.2
-        )
-    elif question_type == "technical":
-        return (
-            metrics["authenticity_score"] * 0.2 +
-            metrics["technical_score"] * 0.5 +
-            metrics["emotional_score"] * 0.1 +
-            metrics["quality_score"] * 0.2
-        )
-    elif question_type == "relationship":
-        return (
-            metrics["authenticity_score"] * 0.4 +
-            metrics["technical_score"] * 0.1 +
-            metrics["emotional_score"] * 0.3 +
-            metrics["quality_score"] * 0.2
-        )
-    elif question_type == "philosophical":
-        return (
-            metrics["authenticity_score"] * 0.4 +
-            metrics["technical_score"] * 0.3 +
-            metrics["emotional_score"] * 0.1 +
-            metrics["quality_score"] * 0.2
-        )
-    else:
-        # Default weighting
-        return (
-            metrics["authenticity_score"] * 0.25 +
-            metrics["technical_score"] * 0.25 +
-            metrics["emotional_score"] * 0.25 +
-            metrics["quality_score"] * 0.25
-        )
+    # For all question types, we now use a simpler weighting:
+    # 60% primary dimension, 40% character consistency
+    primary_dimension_weight = 0.6
+    character_consistency_weight = 0.4
+    
+    return (
+        metrics["primary_dimension_score"] * primary_dimension_weight +
+        metrics["character_consistency_score"] * character_consistency_weight
+    )
 
 def format_evaluation_output(metrics, question, response, weighted_score=None):
     """
@@ -527,14 +490,10 @@ Response:
 Evaluation:
 - Overall Score: {metrics.get('overall_score', 'N/A')}/10
   - {metrics.get('overall_reasoning', 'No reasoning provided')}
-- Authenticity Score: {metrics.get('authenticity_score', 'N/A')}/10
-  - {metrics.get('authenticity_reasoning', 'No reasoning provided')}
-- Technical Score: {metrics.get('technical_score', 'N/A')}/10
-  - {metrics.get('technical_reasoning', 'No reasoning provided')}
-- Emotional Score: {metrics.get('emotional_score', 'N/A')}/10
-  - {metrics.get('emotional_reasoning', 'No reasoning provided')}
-- Quality Score: {metrics.get('quality_score', 'N/A')}/10
-  - {metrics.get('quality_reasoning', 'No reasoning provided')}
+- Primary Dimension Score: {metrics.get('primary_dimension_score', 'N/A')}/10
+  - {metrics.get('primary_dimension_reasoning', 'No reasoning provided')}
+- Character Consistency Score: {metrics.get('character_consistency_score', 'N/A')}/10
+  - {metrics.get('character_consistency_reasoning', 'No reasoning provided')}
 """
     
     if weighted_score is not None:
@@ -724,21 +683,13 @@ def create_html_report(results, output_path):
             
             html += f'<p class="score">Weighted Score: {weighted_score:.2f}/10 (based on question type)</p>'
             
-            html += f'<p class="score">Authenticity Score: {metrics.get("authenticity_score", "N/A")}/10</p>'
-            if 'authenticity_reasoning' in metrics:
-                html += f'<p class="reasoning">{metrics["authenticity_reasoning"]}</p>'
+            html += f'<p class="score">Primary Dimension Score: {metrics.get("primary_dimension_score", "N/A")}/10</p>'
+            if 'primary_dimension_reasoning' in metrics:
+                html += f'<p class="reasoning">{metrics["primary_dimension_reasoning"]}</p>'
             
-            html += f'<p class="score">Technical Score: {metrics.get("technical_score", "N/A")}/10</p>'
-            if 'technical_reasoning' in metrics:
-                html += f'<p class="reasoning">{metrics["technical_reasoning"]}</p>'
-            
-            html += f'<p class="score">Emotional Score: {metrics.get("emotional_score", "N/A")}/10</p>'
-            if 'emotional_reasoning' in metrics:
-                html += f'<p class="reasoning">{metrics["emotional_reasoning"]}</p>'
-            
-            html += f'<p class="score">Quality Score: {metrics.get("quality_score", "N/A")}/10</p>'
-            if 'quality_reasoning' in metrics:
-                html += f'<p class="reasoning">{metrics["quality_reasoning"]}</p>'
+            html += f'<p class="score">Character Consistency Score: {metrics.get("character_consistency_score", "N/A")}/10</p>'
+            if 'character_consistency_reasoning' in metrics:
+                html += f'<p class="reasoning">{metrics["character_consistency_reasoning"]}</p>'
             
             html += """
     </div>
