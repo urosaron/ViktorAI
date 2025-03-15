@@ -25,6 +25,14 @@ PROMPT_CATEGORIES = {
     "full": "Complete Viktor prompt"
 }
 
+# Define mapping from question types to prompt categories
+QUESTION_CATEGORY_MAPPING = {
+    "identity": "personality_focused",
+    "technical": "technical_focused",
+    "relationship": "relationship_focused",
+    "philosophical": "full"
+}
+
 # Define evaluation metrics class if not imported
 class EvaluationMetrics:
     @staticmethod
@@ -372,6 +380,7 @@ def create_html_report(results, output_path):
     """
     model_name = results["metadata"]["model"]
     timestamp = results["metadata"]["timestamp"]
+    category_specific_mode = results['metadata'].get('category_specific_mode', False)
     
     html = f"""<!DOCTYPE html>
 <html>
@@ -407,58 +416,63 @@ def create_html_report(results, output_path):
         tr:nth-child(even) {{
             background-color: #f9f9f9;
         }}
-        .metadata {{
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }}
         .response {{
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 5px;
-            white-space: pre-wrap;
+            border-left: 4px solid #6c757d;
             margin-bottom: 20px;
         }}
         .evaluation {{
             background-color: #e9f7ef;
             padding: 15px;
             border-radius: 5px;
+            border-left: 4px solid #27ae60;
             margin-bottom: 20px;
-        }}
-        .reasoning {{
-            font-style: italic;
-            color: #555;
-            margin-left: 20px;
-        }}
-        .summary {{
-            font-weight: bold;
         }}
         .score {{
             font-weight: bold;
         }}
-        .divider {{
-            border-top: 1px solid #ddd;
-            margin: 30px 0;
+        .reasoning {{
+            margin-left: 20px;
+            font-style: italic;
+            color: #555;
+        }}
+        .metadata {{
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }}
+        .summary {{
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
         }}
     </style>
 </head>
 <body>
     <h1>Benchmark Results: {model_name}</h1>
-    <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    <p><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
     
-    <h2>Metadata</h2>
     <div class="metadata">
-        <p><strong>Model:</strong> {model_name}</p>
-        <p><strong>Model Family:</strong> {results['metadata']['model_family']}</p>
-        <p><strong>Temperature:</strong> {results['metadata']['temperature']}</p>
-        <p><strong>Max Tokens:</strong> {results['metadata']['max_tokens']}</p>
-        <p><strong>Evaluator Model:</strong> {results['metadata']['evaluator_model']}</p>
-        <p><strong>Timestamp:</strong> {timestamp}</p>
-        <p><strong>Mock Implementation:</strong> {'Yes' if results['metadata']['is_mock'] else 'No'}</p>
+        <h2>Metadata</h2>
+        <ul>
+            <li><strong>Model:</strong> {model_name}</li>
+            <li><strong>Model Family:</strong> {results['metadata']['model_family']}</li>
+            <li><strong>Temperature:</strong> {results['metadata']['temperature']}</li>
+            <li><strong>Max Tokens:</strong> {results['metadata']['max_tokens']}</li>
+            <li><strong>Evaluator Model:</strong> {results['metadata']['evaluator_model']}</li>
+            <li><strong>Timestamp:</strong> {timestamp}</li>
+            <li><strong>Mock Implementation:</strong> {'Yes' if results['metadata']['is_mock'] else 'No'}</li>
+            <li><strong>Baseline Mode:</strong> {'Yes' if results['metadata']['baseline_mode'] else 'No'}</li>
+            <li><strong>Category-Specific Mode:</strong> {'Yes' if category_specific_mode else 'No'}</li>
+        </ul>
     </div>
     
-    <h2>Summary Statistics</h2>
+    <div class="summary">
+        <h2>Summary Statistics</h2>
 """
     
     # Calculate average scores across all categories
@@ -490,248 +504,281 @@ def create_html_report(results, output_path):
             avg_scores[key] /= total_metrics
     
     # Add summary table
-    html += """
-    <table>
-        <tr>
-            <th>Metric</th>
-            <th>Average Score</th>
-        </tr>
-"""
-    
     html += f"""
-        <tr>
-            <td>Overall Score</td>
-            <td>{avg_scores['overall_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Weighted Score</td>
-            <td>{avg_scores['weighted_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Authenticity</td>
-            <td>{avg_scores['authenticity_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Technical</td>
-            <td>{avg_scores['technical_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Emotional</td>
-            <td>{avg_scores['emotional_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Quality</td>
-            <td>{avg_scores['quality_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Response Time</td>
-            <td>{avg_scores['response_time']:.2f}s</td>
-        </tr>
-    </table>
-    
-    <h2>Scores by Category</h2>
-"""
-    
-    # Add category scores
-    for category in results["metrics"]:
-        html += f"""
-    <h3>{category}</h3>
-"""
-        
-        # Calculate average scores for this category
-        cat_avg_scores = {
-            "overall_score": 0,
-            "weighted_score": 0,
-            "authenticity_score": 0,
-            "technical_score": 0,
-            "emotional_score": 0,
-            "quality_score": 0,
-            "response_time": 0
-        }
-        
-        cat_total = len(results["metrics"][category])
-        
-        for metrics in results["metrics"][category]:
-            for key in cat_avg_scores:
-                if key in metrics:
-                    cat_avg_scores[key] += metrics[key]
-                elif key == "weighted_score" and "overall_score" in metrics:
-                    # If weighted_score is not present, use overall_score as fallback
-                    cat_avg_scores[key] += metrics["overall_score"]
-        
-        # Calculate averages
-        if cat_total > 0:
-            for key in cat_avg_scores:
-                cat_avg_scores[key] /= cat_total
-        
-        # Add category summary table
-        html += """
-    <table>
-        <tr>
-            <th>Metric</th>
-            <th>Average Score</th>
-        </tr>
-"""
-        
-        html += f"""
-        <tr>
-            <td>Overall Score</td>
-            <td>{cat_avg_scores['overall_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Weighted Score</td>
-            <td>{cat_avg_scores.get('weighted_score', cat_avg_scores['overall_score']):.2f}</td>
-        </tr>
-        <tr>
-            <td>Authenticity</td>
-            <td>{cat_avg_scores['authenticity_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Technical</td>
-            <td>{cat_avg_scores['technical_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Emotional</td>
-            <td>{cat_avg_scores['emotional_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Quality</td>
-            <td>{cat_avg_scores['quality_score']:.2f}</td>
-        </tr>
-        <tr>
-            <td>Response Time</td>
-            <td>{cat_avg_scores['response_time']:.2f}s</td>
-        </tr>
-    </table>
-    
-    <h4>Question Scores</h4>
-    <table>
-        <tr>
-            <th>Question</th>
-            <th>Type</th>
-            <th>Overall</th>
-            <th>Weighted</th>
-            <th>Authenticity</th>
-            <th>Technical</th>
-            <th>Emotional</th>
-            <th>Quality</th>
-            <th>Time</th>
-        </tr>
-"""
-        
-        # Add individual question scores
-        for i, (metrics, response_data) in enumerate(zip(results["metrics"][category], results["responses"][category])):
-            question = response_data["question"]
-            # Truncate long questions
-            if len(question) > 50:
-                question = question[:47] + "..."
-            
-            # Get question type
-            question_type = metrics.get('question_type', 'unknown')
-            
-            # Get weighted score
-            weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
-            
-            html += f"""
-        <tr>
-            <td>{question}</td>
-            <td>{question_type}</td>
-            <td>{metrics.get('overall_score', 0):.1f}</td>
-            <td>{weighted_score:.1f}</td>
-            <td>{metrics.get('authenticity_score', 0):.1f}</td>
-            <td>{metrics.get('technical_score', 0):.1f}</td>
-            <td>{metrics.get('emotional_score', 0):.1f}</td>
-            <td>{metrics.get('quality_score', 0):.1f}</td>
-            <td>{metrics.get('response_time', 0):.2f}s</td>
-        </tr>
-"""
-        
-        html += """
-    </table>
-"""
-    
-    # Add detailed responses and evaluations
-    html += """
-    <h2>Detailed Responses and Evaluations</h2>
-"""
-    
-    for category in results["responses"]:
-        html += f"""
-    <h3>{category}</h3>
-"""
-        
-        # Include all responses with evaluations
-        for i, (response_data, metrics) in enumerate(zip(results["responses"][category], results["metrics"][category])):
-            question = response_data["question"]
-            response = response_data["response"].replace("<", "&lt;").replace(">", "&gt;")
-            
-            html += f"""
-    <div class="question-container">
-        <h4>Question {i+1}: {question}</h4>
-        <p><strong>Question Type:</strong> {metrics.get('question_type', 'unknown')}</p>
-        <p><strong>Response Time:</strong> {response_data['response_time']:.2f}s</p>
-        
-        <h5>Response:</h5>
-        <div class="response">{response}</div>
-        
-        <h5>Evaluation:</h5>
-        <div class="evaluation">
-            <p class="score">Overall Score: {metrics.get('overall_score', 0):.1f}/10</p>
-"""
-            
-            if 'overall_reasoning' in metrics:
-                html += f"""
-            <p class="reasoning">{metrics['overall_reasoning']}</p>
-"""
-            
-            html += f"""
-            <p class="score">Weighted Score: {metrics.get('weighted_score', metrics.get('overall_score', 0)):.1f}/10</p>
-"""
-            
-            html += f"""
-            <p class="score">Authenticity Score: {metrics.get('authenticity_score', 0):.1f}/10</p>
-"""
-            
-            if 'authenticity_reasoning' in metrics:
-                html += f"""
-            <p class="reasoning">{metrics['authenticity_reasoning']}</p>
-"""
-            
-            html += f"""
-            <p class="score">Technical Score: {metrics.get('technical_score', 0):.1f}/10</p>
-"""
-            
-            if 'technical_reasoning' in metrics:
-                html += f"""
-            <p class="reasoning">{metrics['technical_reasoning']}</p>
-"""
-            
-            html += f"""
-            <p class="score">Emotional Score: {metrics.get('emotional_score', 0):.1f}/10</p>
-"""
-            
-            if 'emotional_reasoning' in metrics:
-                html += f"""
-            <p class="reasoning">{metrics['emotional_reasoning']}</p>
-"""
-            
-            html += f"""
-            <p class="score">Quality Score: {metrics.get('quality_score', 0):.1f}/10</p>
-"""
-            
-            if 'quality_reasoning' in metrics:
-                html += f"""
-            <p class="reasoning">{metrics['quality_reasoning']}</p>
-"""
-            
-            html += """
-        </div>
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Average Score</th>
+            </tr>
+            <tr>
+                <td>Overall Score</td>
+                <td>{avg_scores['overall_score']:.2f}</td>
+            </tr>
+            <tr>
+                <td>Weighted Score</td>
+                <td>{avg_scores['weighted_score']:.2f}</td>
+            </tr>
+            <tr>
+                <td>Authenticity</td>
+                <td>{avg_scores['authenticity_score']:.2f}</td>
+            </tr>
+            <tr>
+                <td>Technical</td>
+                <td>{avg_scores['technical_score']:.2f}</td>
+            </tr>
+            <tr>
+                <td>Emotional</td>
+                <td>{avg_scores['emotional_score']:.2f}</td>
+            </tr>
+            <tr>
+                <td>Quality</td>
+                <td>{avg_scores['quality_score']:.2f}</td>
+            </tr>
+            <tr>
+                <td>Response Time</td>
+                <td>{avg_scores['response_time']:.2f}s</td>
+            </tr>
+        </table>
     </div>
-    <div class="divider"></div>
 """
+
+    # Add detailed results by category or question type
+    if category_specific_mode:
+        html += "<h2>Results by Question Type</h2>"
+        
+        for question_type in results["responses"]["by_question_type"]:
+            html += f"<h3>{question_type.capitalize()}</h3>"
+            
+            # Calculate average scores for this question type
+            type_avg_scores = {
+                "overall_score": 0,
+                "weighted_score": 0,
+                "authenticity_score": 0,
+                "technical_score": 0,
+                "emotional_score": 0,
+                "quality_score": 0,
+                "response_time": 0
+            }
+            
+            type_total = len(results["metrics"]["by_question_type"][question_type])
+            
+            for metrics in results["metrics"]["by_question_type"][question_type]:
+                for key in type_avg_scores:
+                    if key in metrics:
+                        type_avg_scores[key] += metrics[key]
+                    elif key == "weighted_score" and "overall_score" in metrics:
+                        # If weighted_score is not present, use overall_score as fallback
+                        type_avg_scores[key] += metrics["overall_score"]
+            
+            # Calculate averages
+            if type_total > 0:
+                for key in type_avg_scores:
+                    type_avg_scores[key] /= type_total
+            
+            # Add average scores for this question type
+            html += f"""
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Average Score</th>
+                </tr>
+                <tr>
+                    <td>Overall Score</td>
+                    <td>{type_avg_scores['overall_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Weighted Score</td>
+                    <td>{type_avg_scores['weighted_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Authenticity</td>
+                    <td>{type_avg_scores['authenticity_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Technical</td>
+                    <td>{type_avg_scores['technical_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Emotional</td>
+                    <td>{type_avg_scores['emotional_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Quality</td>
+                    <td>{type_avg_scores['quality_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Response Time</td>
+                    <td>{type_avg_scores['response_time']:.2f}s</td>
+                </tr>
+            </table>
+            """
+            
+            # Add individual question results
+            for i, (response_data, metrics) in enumerate(zip(
+                results["responses"]["by_question_type"][question_type],
+                results["metrics"]["by_question_type"][question_type]
+            )):
+                question = response_data["question"]
+                response = response_data["response"]
+                prompt_category = response_data.get("prompt_category", "unknown")
+                
+                html += f"""
+                <h4>Question {i+1}: {question}</h4>
+                <p><strong>Prompt Category:</strong> {prompt_category}</p>
+                <p><strong>Response Time:</strong> {response_data['response_time']:.2f}s</p>
+                
+                <div class="response">
+                    <h5>Response:</h5>
+                    <p>{response.replace('\n', '<br>')}</p>
+                </div>
+                
+                <div class="evaluation">
+                    <h5>Evaluation:</h5>
+                    <p class="score">Overall Score: {metrics.get('overall_score', 0):.1f}/10</p>
+                """
+                
+                if 'overall_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["overall_reasoning"]}</p>'
+                
+                html += f'<p class="score">Weighted Score: {metrics.get("weighted_score", metrics.get("overall_score", 0)):.1f}/10 (based on question type)</p>'
+                
+                html += f'<p class="score">Authenticity Score: {metrics.get("authenticity_score", 0):.1f}/10</p>'
+                if 'authenticity_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["authenticity_reasoning"]}</p>'
+                
+                html += f'<p class="score">Technical Score: {metrics.get("technical_score", 0):.1f}/10</p>'
+                if 'technical_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["technical_reasoning"]}</p>'
+                
+                html += f'<p class="score">Emotional Score: {metrics.get("emotional_score", 0):.1f}/10</p>'
+                if 'emotional_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["emotional_reasoning"]}</p>'
+                
+                html += f'<p class="score">Quality Score: {metrics.get("quality_score", 0):.1f}/10</p>'
+                if 'quality_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["quality_reasoning"]}</p>'
+                
+                html += "</div>"
+    else:
+        html += """
+        <h2>Results by Prompt Category</h2>
+        """
     
+    # Add category-specific content for original mode
+    if not category_specific_mode:
+        for category in results["responses"]:
+            html += f"<h3>{category}</h3>"
+            
+            # Calculate average scores for this category
+            cat_avg_scores = {
+                "overall_score": 0,
+                "weighted_score": 0,
+                "authenticity_score": 0,
+                "technical_score": 0,
+                "emotional_score": 0,
+                "quality_score": 0,
+                "response_time": 0
+            }
+            
+            cat_total = len(results["metrics"][category])
+            
+            for metrics in results["metrics"][category]:
+                for key in cat_avg_scores:
+                    if key in metrics:
+                        cat_avg_scores[key] += metrics[key]
+                    elif key == "weighted_score" and "overall_score" in metrics:
+                        # If weighted_score is not present, use overall_score as fallback
+                        cat_avg_scores[key] += metrics["overall_score"]
+            
+            # Calculate averages
+            if cat_total > 0:
+                for key in cat_avg_scores:
+                    cat_avg_scores[key] /= cat_total
+            
+            # Add average scores for this category
+            html += f"""
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Average Score</th>
+                </tr>
+                <tr>
+                    <td>Overall Score</td>
+                    <td>{cat_avg_scores['overall_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Weighted Score</td>
+                    <td>{cat_avg_scores['weighted_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Authenticity</td>
+                    <td>{cat_avg_scores['authenticity_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Technical</td>
+                    <td>{cat_avg_scores['technical_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Emotional</td>
+                    <td>{cat_avg_scores['emotional_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Quality</td>
+                    <td>{cat_avg_scores['quality_score']:.2f}</td>
+                </tr>
+                <tr>
+                    <td>Response Time</td>
+                    <td>{cat_avg_scores['response_time']:.2f}s</td>
+                </tr>
+            </table>
+            """
+            
+            # Add individual question results
+            for i, (response_data, metrics) in enumerate(zip(results["responses"][category], results["metrics"][category])):
+                question = response_data["question"]
+                response = response_data["response"]
+                question_type = metrics.get('question_type', 'unknown')
+                
+                html += f"""
+                <h4>Question {i+1}: {question}</h4>
+                <p><strong>Question Type:</strong> {question_type}</p>
+                <p><strong>Response Time:</strong> {response_data['response_time']:.2f}s</p>
+                
+                <div class="response">
+                    <h5>Response:</h5>
+                    <p>{response.replace('\n', '<br>')}</p>
+                </div>
+                
+                <div class="evaluation">
+                    <h5>Evaluation:</h5>
+                    <p class="score">Overall Score: {metrics.get('overall_score', 0):.1f}/10</p>
+                """
+                
+                if 'overall_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["overall_reasoning"]}</p>'
+                
+                html += f'<p class="score">Weighted Score: {metrics.get("weighted_score", metrics.get("overall_score", 0)):.1f}/10 (based on question type)</p>'
+                
+                html += f'<p class="score">Authenticity Score: {metrics.get("authenticity_score", 0):.1f}/10</p>'
+                if 'authenticity_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["authenticity_reasoning"]}</p>'
+                
+                html += f'<p class="score">Technical Score: {metrics.get("technical_score", 0):.1f}/10</p>'
+                if 'technical_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["technical_reasoning"]}</p>'
+                
+                html += f'<p class="score">Emotional Score: {metrics.get("emotional_score", 0):.1f}/10</p>'
+                if 'emotional_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["emotional_reasoning"]}</p>'
+                
+                html += f'<p class="score">Quality Score: {metrics.get("quality_score", 0):.1f}/10</p>'
+                if 'quality_reasoning' in metrics:
+                    html += f'<p class="reasoning">{metrics["quality_reasoning"]}</p>'
+                
+                html += "</div>"
+    
+    # Close HTML
     html += """
-    <p><em>End of Report</em></p>
 </body>
 </html>
 """
@@ -762,30 +809,56 @@ def create_markdown_report(results, output_path):
         f.write(f"- **Max Tokens:** {results['metadata']['max_tokens']}\n")
         f.write(f"- **Evaluator Model:** {results['metadata']['evaluator_model']}\n")
         f.write(f"- **Timestamp:** {timestamp}\n")
-        f.write(f"- **Mock Implementation:** {'Yes' if results['metadata']['is_mock'] else 'No'}\n\n")
+        f.write(f"- **Mock Implementation:** {'Yes' if results['metadata']['is_mock'] else 'No'}\n")
+        f.write(f"- **Baseline Mode:** {'Yes' if results['metadata']['baseline_mode'] else 'No'}\n")
+        f.write(f"- **Category-Specific Mode:** {'Yes' if results['metadata'].get('category_specific_mode', False) else 'No'}\n\n")
+        
+        # Check if we're in category-specific mode
+        category_specific_mode = results['metadata'].get('category_specific_mode', False)
         
         # Write summary statistics
         f.write("## Summary Statistics\n\n")
         
-        # Calculate average scores across all categories
-        avg_scores = {
-            "overall_score": 0,
-            "weighted_score": 0,
-            "authenticity_score": 0,
-            "technical_score": 0,
-            "emotional_score": 0,
-            "quality_score": 0,
-            "response_time": 0
-        }
-        
-        total_metrics = 0
-        
-        for category in results["metrics"]:
-            for metrics in results["metrics"][category]:
-                for key in avg_scores:
-                    if key in metrics:
-                        avg_scores[key] += metrics[key]
-                total_metrics += 1
+        if category_specific_mode:
+            # Calculate average scores across all question types
+            avg_scores = {
+                "overall_score": 0,
+                "weighted_score": 0,
+                "authenticity_score": 0,
+                "technical_score": 0,
+                "emotional_score": 0,
+                "quality_score": 0,
+                "response_time": 0
+            }
+            
+            total_metrics = 0
+            
+            for question_type in results["metrics"]["by_question_type"]:
+                for metrics in results["metrics"]["by_question_type"][question_type]:
+                    for key in avg_scores:
+                        if key in metrics:
+                            avg_scores[key] += metrics[key]
+                    total_metrics += 1
+        else:
+            # Calculate average scores across all categories
+            avg_scores = {
+                "overall_score": 0,
+                "weighted_score": 0,
+                "authenticity_score": 0,
+                "technical_score": 0,
+                "emotional_score": 0,
+                "quality_score": 0,
+                "response_time": 0
+            }
+            
+            total_metrics = 0
+            
+            for category in results["metrics"]:
+                for metrics in results["metrics"][category]:
+                    for key in avg_scores:
+                        if key in metrics:
+                            avg_scores[key] += metrics[key]
+                    total_metrics += 1
         
         # Calculate averages
         if total_metrics > 0:
@@ -803,121 +876,245 @@ def create_markdown_report(results, output_path):
         f.write(f"| Quality | {avg_scores['quality_score']:.2f} |\n")
         f.write(f"| Response Time | {avg_scores['response_time']:.2f}s |\n\n")
         
-        # Write scores by category
-        f.write("## Scores by Category\n\n")
-        
-        for category in results["metrics"]:
-            f.write(f"### {category}\n\n")
+        if category_specific_mode:
+            # Write scores by question type
+            f.write("## Scores by Question Type\n\n")
             
-            # Calculate average scores for this category
-            cat_avg_scores = {
-                "overall_score": 0,
-                "weighted_score": 0,
-                "authenticity_score": 0,
-                "technical_score": 0,
-                "emotional_score": 0,
-                "quality_score": 0,
-                "response_time": 0
-            }
-            
-            cat_total = len(results["metrics"][category])
-            
-            for metrics in results["metrics"][category]:
-                for key in cat_avg_scores:
-                    if key in metrics:
-                        cat_avg_scores[key] += metrics[key]
-                    elif key == "weighted_score" and "overall_score" in metrics:
-                        # If weighted_score is not present, use overall_score as fallback
-                        cat_avg_scores[key] += metrics["overall_score"]
-            
-            # Calculate averages
-            if cat_total > 0:
-                for key in cat_avg_scores:
-                    cat_avg_scores[key] /= cat_total
-            
-            # Write average scores for this category
-            f.write("| Metric | Average Score |\n")
-            f.write("|--------|---------------|\n")
-            f.write(f"| Overall Score | {cat_avg_scores['overall_score']:.2f} |\n")
-            f.write(f"| Weighted Score | {cat_avg_scores.get('weighted_score', cat_avg_scores['overall_score']):.2f} |\n")
-            f.write(f"| Authenticity | {cat_avg_scores['authenticity_score']:.2f} |\n")
-            f.write(f"| Technical | {cat_avg_scores['technical_score']:.2f} |\n")
-            f.write(f"| Emotional | {cat_avg_scores['emotional_score']:.2f} |\n")
-            f.write(f"| Quality | {cat_avg_scores['quality_score']:.2f} |\n")
-            f.write(f"| Response Time | {cat_avg_scores['response_time']:.2f}s |\n\n")
-            
-            # Write individual question scores
-            f.write("#### Question Scores\n\n")
-            f.write("| Question | Type | Overall | Weighted | Authenticity | Technical | Emotional | Quality | Time |\n")
-            f.write("|----------|------|---------|----------|--------------|-----------|-----------|---------|------|\n")
-            
-            for i, (metrics, response_data) in enumerate(zip(results["metrics"][category], results["responses"][category])):
-                question = response_data["question"]
-                # Truncate long questions
-                if len(question) > 50:
-                    question = question[:47] + "..."
+            for question_type in results["metrics"]["by_question_type"]:
+                f.write(f"### {question_type.capitalize()}\n\n")
                 
-                # Get question type
-                question_type = metrics.get('question_type', 'unknown')
+                # Calculate average scores for this question type
+                type_avg_scores = {
+                    "overall_score": 0,
+                    "weighted_score": 0,
+                    "authenticity_score": 0,
+                    "technical_score": 0,
+                    "emotional_score": 0,
+                    "quality_score": 0,
+                    "response_time": 0
+                }
                 
-                # Get weighted score
-                weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+                type_total = len(results["metrics"]["by_question_type"][question_type])
                 
-                f.write(f"| {question} | {question_type} | {metrics.get('overall_score', 0):.1f} | {weighted_score:.1f} | ")
-                f.write(f"{metrics.get('authenticity_score', 0):.1f} | ")
-                f.write(f"{metrics.get('technical_score', 0):.1f} | ")
-                f.write(f"{metrics.get('emotional_score', 0):.1f} | ")
-                f.write(f"{metrics.get('quality_score', 0):.1f} | ")
-                f.write(f"{metrics.get('response_time', 0):.2f}s |\n")
+                for metrics in results["metrics"]["by_question_type"][question_type]:
+                    for key in type_avg_scores:
+                        if key in metrics:
+                            type_avg_scores[key] += metrics[key]
+                        elif key == "weighted_score" and "overall_score" in metrics:
+                            # If weighted_score is not present, use overall_score as fallback
+                            type_avg_scores[key] += metrics["overall_score"]
+                
+                # Calculate averages
+                if type_total > 0:
+                    for key in type_avg_scores:
+                        type_avg_scores[key] /= type_total
+                
+                # Write average scores for this question type
+                f.write("| Metric | Average Score |\n")
+                f.write("|--------|---------------|\n")
+                f.write(f"| Overall Score | {type_avg_scores['overall_score']:.2f} |\n")
+                f.write(f"| Weighted Score | {type_avg_scores.get('weighted_score', type_avg_scores['overall_score']):.2f} |\n")
+                f.write(f"| Authenticity | {type_avg_scores['authenticity_score']:.2f} |\n")
+                f.write(f"| Technical | {type_avg_scores['technical_score']:.2f} |\n")
+                f.write(f"| Emotional | {type_avg_scores['emotional_score']:.2f} |\n")
+                f.write(f"| Quality | {type_avg_scores['quality_score']:.2f} |\n")
+                f.write(f"| Response Time | {type_avg_scores['response_time']:.2f}s |\n\n")
+                
+                # Write individual question scores
+                f.write("#### Question Scores\n\n")
+                f.write("| Question | Prompt Category | Overall | Weighted | Authenticity | Technical | Emotional | Quality | Time |\n")
+                f.write("|----------|----------------|---------|----------|--------------|-----------|-----------|---------|------|\n")
+                
+                for i, (metrics, response_data) in enumerate(zip(
+                    results["metrics"]["by_question_type"][question_type], 
+                    results["responses"]["by_question_type"][question_type]
+                )):
+                    question = response_data["question"]
+                    # Truncate long questions
+                    if len(question) > 50:
+                        question = question[:47] + "..."
+                    
+                    # Get prompt category
+                    prompt_category = metrics.get('prompt_category', 'unknown')
+                    
+                    # Get weighted score
+                    weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+                    
+                    f.write(f"| {question} | {prompt_category} | {metrics.get('overall_score', 0):.1f} | {weighted_score:.1f} | ")
+                    f.write(f"{metrics.get('authenticity_score', 0):.1f} | ")
+                    f.write(f"{metrics.get('technical_score', 0):.1f} | ")
+                    f.write(f"{metrics.get('emotional_score', 0):.1f} | ")
+                    f.write(f"{metrics.get('quality_score', 0):.1f} | ")
+                    f.write(f"{metrics.get('response_time', 0):.2f}s |\n")
+                
+                f.write("\n")
+        else:
+            # Write scores by category (original mode)
+            f.write("## Scores by Category\n\n")
             
-            f.write("\n")
+            for category in results["metrics"]:
+                f.write(f"### {category}\n\n")
+                
+                # Calculate average scores for this category
+                cat_avg_scores = {
+                    "overall_score": 0,
+                    "weighted_score": 0,
+                    "authenticity_score": 0,
+                    "technical_score": 0,
+                    "emotional_score": 0,
+                    "quality_score": 0,
+                    "response_time": 0
+                }
+                
+                cat_total = len(results["metrics"][category])
+                
+                for metrics in results["metrics"][category]:
+                    for key in cat_avg_scores:
+                        if key in metrics:
+                            cat_avg_scores[key] += metrics[key]
+                        elif key == "weighted_score" and "overall_score" in metrics:
+                            # If weighted_score is not present, use overall_score as fallback
+                            cat_avg_scores[key] += metrics["overall_score"]
+                
+                # Calculate averages
+                if cat_total > 0:
+                    for key in cat_avg_scores:
+                        cat_avg_scores[key] /= cat_total
+                
+                # Write average scores for this category
+                f.write("| Metric | Average Score |\n")
+                f.write("|--------|---------------|\n")
+                f.write(f"| Overall Score | {cat_avg_scores['overall_score']:.2f} |\n")
+                f.write(f"| Weighted Score | {cat_avg_scores.get('weighted_score', cat_avg_scores['overall_score']):.2f} |\n")
+                f.write(f"| Authenticity | {cat_avg_scores['authenticity_score']:.2f} |\n")
+                f.write(f"| Technical | {cat_avg_scores['technical_score']:.2f} |\n")
+                f.write(f"| Emotional | {cat_avg_scores['emotional_score']:.2f} |\n")
+                f.write(f"| Quality | {cat_avg_scores['quality_score']:.2f} |\n")
+                f.write(f"| Response Time | {cat_avg_scores['response_time']:.2f}s |\n\n")
+                
+                # Write individual question scores
+                f.write("#### Question Scores\n\n")
+                f.write("| Question | Type | Overall | Weighted | Authenticity | Technical | Emotional | Quality | Time |\n")
+                f.write("|----------|------|---------|----------|--------------|-----------|-----------|---------|------|\n")
+                
+                for i, (metrics, response_data) in enumerate(zip(results["metrics"][category], results["responses"][category])):
+                    question = response_data["question"]
+                    # Truncate long questions
+                    if len(question) > 50:
+                        question = question[:47] + "..."
+                    
+                    # Get question type
+                    question_type = metrics.get('question_type', 'unknown')
+                    
+                    # Get weighted score
+                    weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+                    
+                    f.write(f"| {question} | {question_type} | {metrics.get('overall_score', 0):.1f} | {weighted_score:.1f} | ")
+                    f.write(f"{metrics.get('authenticity_score', 0):.1f} | ")
+                    f.write(f"{metrics.get('technical_score', 0):.1f} | ")
+                    f.write(f"{metrics.get('emotional_score', 0):.1f} | ")
+                    f.write(f"{metrics.get('quality_score', 0):.1f} | ")
+                    f.write(f"{metrics.get('response_time', 0):.2f}s |\n")
+                
+                f.write("\n")
         
         # Write detailed responses and evaluations
         f.write("## Detailed Responses and Evaluations\n\n")
         
-        for category in results["responses"]:
-            f.write(f"### {category}\n\n")
-            
-            # Include all responses with evaluations
-            for i, (response_data, metrics) in enumerate(zip(results["responses"][category], results["metrics"][category])):
-                question = response_data["question"]
-                response = response_data["response"]
+        if category_specific_mode:
+            # Organize by question type
+            for question_type in results["responses"]["by_question_type"]:
+                f.write(f"### {question_type.capitalize()}\n\n")
                 
-                # Get question type and weighted score
-                question_type = metrics.get('question_type', 'unknown')
-                weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+                # Include all responses with evaluations
+                for i, (response_data, metrics) in enumerate(zip(
+                    results["responses"]["by_question_type"][question_type],
+                    results["metrics"]["by_question_type"][question_type]
+                )):
+                    question = response_data["question"]
+                    response = response_data["response"]
+                    prompt_category = response_data.get("prompt_category", "unknown")
+                    
+                    # Get weighted score
+                    weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+                    
+                    f.write(f"#### Question {i+1}: {question}\n\n")
+                    f.write(f"**Question Type:** {question_type}\n\n")
+                    f.write(f"**Prompt Category:** {prompt_category}\n\n")
+                    f.write(f"**Response Time:** {response_data['response_time']:.2f}s\n\n")
+                    f.write("**Response:**\n\n")
+                    f.write(f"{response}\n\n")
+                    
+                    # Add evaluator's scores and reasoning
+                    f.write("**Evaluation:**\n\n")
+                    f.write(f"- **Overall Score:** {metrics.get('overall_score', 0):.1f}/10\n")
+                    if 'overall_reasoning' in metrics:
+                        f.write(f"  - {metrics['overall_reasoning']}\n")
+                    
+                    f.write(f"- **Weighted Score:** {weighted_score:.1f}/10 (based on question type)\n")
+                    
+                    f.write(f"- **Authenticity Score:** {metrics.get('authenticity_score', 0):.1f}/10\n")
+                    if 'authenticity_reasoning' in metrics:
+                        f.write(f"  - {metrics['authenticity_reasoning']}\n")
+                    
+                    f.write(f"- **Technical Score:** {metrics.get('technical_score', 0):.1f}/10\n")
+                    if 'technical_reasoning' in metrics:
+                        f.write(f"  - {metrics['technical_reasoning']}\n")
+                    
+                    f.write(f"- **Emotional Score:** {metrics.get('emotional_score', 0):.1f}/10\n")
+                    if 'emotional_reasoning' in metrics:
+                        f.write(f"  - {metrics['emotional_reasoning']}\n")
+                    
+                    f.write(f"- **Quality Score:** {metrics.get('quality_score', 0):.1f}/10\n")
+                    if 'quality_reasoning' in metrics:
+                        f.write(f"  - {metrics['quality_reasoning']}\n")
+                    
+                    f.write("\n---\n\n")
+        else:
+            # Original mode: organize by category
+            for category in results["responses"]:
+                f.write(f"### {category}\n\n")
                 
-                f.write(f"#### Question {i+1}: {question}\n\n")
-                f.write(f"**Question Type:** {question_type}\n\n")
-                f.write(f"**Response Time:** {response_data['response_time']:.2f}s\n\n")
-                f.write("**Response:**\n\n")
-                f.write(f"{response}\n\n")
-                
-                # Add evaluator's scores and reasoning
-                f.write("**Evaluation:**\n\n")
-                f.write(f"- **Overall Score:** {metrics.get('overall_score', 0):.1f}/10\n")
-                if 'overall_reasoning' in metrics:
-                    f.write(f"  - {metrics['overall_reasoning']}\n")
-                
-                f.write(f"- **Weighted Score:** {weighted_score:.1f}/10 (based on question type)\n")
-                
-                f.write(f"- **Authenticity Score:** {metrics.get('authenticity_score', 0):.1f}/10\n")
-                if 'authenticity_reasoning' in metrics:
-                    f.write(f"  - {metrics['authenticity_reasoning']}\n")
-                
-                f.write(f"- **Technical Score:** {metrics.get('technical_score', 0):.1f}/10\n")
-                if 'technical_reasoning' in metrics:
-                    f.write(f"  - {metrics['technical_reasoning']}\n")
-                
-                f.write(f"- **Emotional Score:** {metrics.get('emotional_score', 0):.1f}/10\n")
-                if 'emotional_reasoning' in metrics:
-                    f.write(f"  - {metrics['emotional_reasoning']}\n")
-                
-                f.write(f"- **Quality Score:** {metrics.get('quality_score', 0):.1f}/10\n")
-                if 'quality_reasoning' in metrics:
-                    f.write(f"  - {metrics['quality_reasoning']}\n")
-                
-                f.write("\n---\n\n")
+                # Include all responses with evaluations
+                for i, (response_data, metrics) in enumerate(zip(results["responses"][category], results["metrics"][category])):
+                    question = response_data["question"]
+                    response = response_data["response"]
+                    
+                    # Get question type and weighted score
+                    question_type = metrics.get('question_type', 'unknown')
+                    weighted_score = metrics.get('weighted_score', metrics.get('overall_score', 0))
+                    
+                    f.write(f"#### Question {i+1}: {question}\n\n")
+                    f.write(f"**Question Type:** {question_type}\n\n")
+                    f.write(f"**Response Time:** {response_data['response_time']:.2f}s\n\n")
+                    f.write("**Response:**\n\n")
+                    f.write(f"{response}\n\n")
+                    
+                    # Add evaluator's scores and reasoning
+                    f.write("**Evaluation:**\n\n")
+                    f.write(f"- **Overall Score:** {metrics.get('overall_score', 0):.1f}/10\n")
+                    if 'overall_reasoning' in metrics:
+                        f.write(f"  - {metrics['overall_reasoning']}\n")
+                    
+                    f.write(f"- **Weighted Score:** {weighted_score:.1f}/10 (based on question type)\n")
+                    
+                    f.write(f"- **Authenticity Score:** {metrics.get('authenticity_score', 0):.1f}/10\n")
+                    if 'authenticity_reasoning' in metrics:
+                        f.write(f"  - {metrics['authenticity_reasoning']}\n")
+                    
+                    f.write(f"- **Technical Score:** {metrics.get('technical_score', 0):.1f}/10\n")
+                    if 'technical_reasoning' in metrics:
+                        f.write(f"  - {metrics['technical_reasoning']}\n")
+                    
+                    f.write(f"- **Emotional Score:** {metrics.get('emotional_score', 0):.1f}/10\n")
+                    if 'emotional_reasoning' in metrics:
+                        f.write(f"  - {metrics['emotional_reasoning']}\n")
+                    
+                    f.write(f"- **Quality Score:** {metrics.get('quality_score', 0):.1f}/10\n")
+                    if 'quality_reasoning' in metrics:
+                        f.write(f"  - {metrics['quality_reasoning']}\n")
+                    
+                    f.write("\n---\n\n")
         
         f.write("\n*End of Report*\n")
 
@@ -956,7 +1153,8 @@ def run_benchmark(
     output_dir: str = "benchmark_results",
     visualize_only: bool = False,
     use_mock: bool = False,  # Add a parameter to use mock implementation
-    baseline_mode: bool = False  # Add parameter for baseline mode
+    baseline_mode: bool = False,  # Add parameter for baseline mode
+    category_specific_mode: bool = False  # Add parameter for category-specific mode
 ) -> Dict[str, Any]:
     """
     Run a comprehensive benchmark of ViktorAI with different prompts.
@@ -977,6 +1175,7 @@ def run_benchmark(
         visualize_only: If True, only generate visualizations from existing results
         use_mock: If True, use mock implementations instead of real LLM
         baseline_mode: If True, use a minimal prompt regardless of category
+        category_specific_mode: If True, use the most appropriate prompt category for each question type
         
     Returns:
         Dictionary containing all benchmark results
@@ -1075,7 +1274,8 @@ def run_benchmark(
                 "questions": questions,
                 "prompt_categories": prompt_categories,
                 "is_mock": use_mock,
-                "baseline_mode": baseline_mode  # Add baseline_mode to metadata
+                "baseline_mode": baseline_mode,  # Add baseline_mode to metadata
+                "category_specific_mode": category_specific_mode  # Add category_specific_mode to metadata
             },
             "responses": {},  # Will store all responses
             "metrics": {},    # Will store all metrics
@@ -1102,117 +1302,243 @@ def run_benchmark(
                 print("Falling back to mock implementation")
                 evaluator_llm = MockOllamaInterface(evaluator_config)
         
-        # Run tests for each prompt category
-        for category in prompt_categories:
-            print(f"\n{'='*50}")
-            print(f"Testing with {category} prompt")
-            print(f"{'='*50}")
+        if category_specific_mode:
+            # In category-specific mode, we organize by question type
+            print("\nRunning in category-specific mode")
+            print("Each question will be evaluated with its most appropriate prompt category")
             
-            # Get the specialized prompt for this category
-            if baseline_mode:
-                # Use a minimal prompt for baseline mode
-                minimal_prompt = """
+            # Initialize results structure
+            results["responses"]["by_question_type"] = {}
+            results["metrics"]["by_question_type"] = {}
+            
+            # Group questions by type
+            question_types = {}
+            for question in questions:
+                question_type = EvaluationMetrics.get_question_type(question)
+                if question_type not in question_types:
+                    question_types[question_type] = []
+                question_types[question_type].append(question)
+            
+            # Process each question type
+            for question_type, type_questions in question_types.items():
+                print(f"\n{'='*50}")
+                print(f"Processing {question_type} questions with {QUESTION_CATEGORY_MAPPING.get(question_type, 'baseline')} prompt")
+                print(f"{'='*50}")
+                
+                # Get the appropriate prompt category for this question type
+                category = QUESTION_CATEGORY_MAPPING.get(question_type, "baseline")
+                
+                # Initialize results for this question type
+                if question_type not in results["responses"]["by_question_type"]:
+                    results["responses"]["by_question_type"][question_type] = []
+                if question_type not in results["metrics"]["by_question_type"]:
+                    results["metrics"]["by_question_type"][question_type] = []
+                
+                # Get the specialized prompt for this category
+                if baseline_mode:
+                    # Use a minimal prompt for baseline mode
+                    minimal_prompt = """
 You are Viktor, a brilliant scientist from the show Arcane. You are pragmatic, determined, and stoic.
 You speak with precise technical language and tend toward brevity.
 """
-                specialized_prompt = minimal_prompt
-                print("Using minimal baseline prompt")
-            else:
-                specialized_prompt = get_specialized_prompt(category, evaluator_config)
-            
-            # Initialize ViktorAI with this prompt
-            config = Config(
-                model_name=model_name,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-            
-            # Create a custom ViktorAI instance with the specialized prompt
-            try:
-                if use_mock:
-                    # Create a mock implementation
-                    viktor_ai = create_custom_viktor_ai(config, specialized_prompt)
-                    # Replace the LLM with a mock implementation
-                    viktor_ai.llm = MockOllamaInterface(config)
+                    specialized_prompt = minimal_prompt
+                    print("Using minimal baseline prompt")
                 else:
-                    viktor_ai = create_custom_viktor_ai(config, specialized_prompt)
-            except Exception as e:
-                print(f"Error creating ViktorAI: {e}")
-                print("Skipping category: {category}")
-                continue
-            
-            # Initialize results for this category
-            results["responses"][category] = []
-            results["metrics"][category] = []
-            
-            # Test each question
-            for i, question in enumerate(questions):
-                print(f"\nQuestion {i+1}/{len(questions)}: {question}")
+                    specialized_prompt = get_specialized_prompt(category, evaluator_config)
                 
+                # Initialize ViktorAI with this prompt
+                config = Config(
+                    model_name=model_name,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                
+                # Create a custom ViktorAI instance with the specialized prompt
                 try:
-                    # Generate response
-                    start_time = time.time()
-                    response = viktor_ai.generate_response(question)
-                    response_time = time.time() - start_time
-                    
-                    # Store results without evaluation for now
-                    results["responses"][category].append({
-                        "question": question,
-                        "response": response,
-                        "response_time": response_time
-                    })
-                    
-                    # Print progress
-                    print(f"A: {response[:100]}..." if len(response) > 100 else f"A: {response}")
-                    print(f"Time: {response_time:.2f}s")
+                    if use_mock:
+                        # Create a mock implementation
+                        viktor_ai = create_custom_viktor_ai(config, specialized_prompt)
+                        # Replace the LLM with a mock implementation
+                        viktor_ai.llm = MockOllamaInterface(config)
+                    else:
+                        viktor_ai = create_custom_viktor_ai(config, specialized_prompt)
                 except Exception as e:
-                    print(f"Error processing question: {e}")
-                    # Add a placeholder response
-                    results["responses"][category].append({
-                        "question": question,
-                        "response": f"Error: {str(e)}",
-                        "response_time": 0.0
-                    })
-            
-            # Initialize metrics for this category
-            results["metrics"][category] = []
-            
-            # Now evaluate all responses at once
-            print(f"\nEvaluating all responses for {category} with {evaluator_model}...")
-            for i, response_data in enumerate(results["responses"][category]):
-                question = response_data["question"]
-                response = response_data["response"]
-                response_time = response_data["response_time"]
+                    print(f"Error creating ViktorAI: {e}")
+                    print(f"Skipping question type: {question_type}")
+                    continue
                 
+                # Process each question of this type
+                for i, question in enumerate(type_questions):
+                    print(f"\nQuestion {i+1}/{len(type_questions)} ({question_type}): {question}")
+                    
+                    try:
+                        # Generate response
+                        start_time = time.time()
+                        response = viktor_ai.generate_response(question)
+                        response_time = time.time() - start_time
+                        
+                        # Store results
+                        results["responses"]["by_question_type"][question_type].append({
+                            "question": question,
+                            "response": response,
+                            "response_time": response_time,
+                            "prompt_category": category
+                        })
+                        
+                        # Print progress
+                        print(f"A: {response[:100]}..." if len(response) > 100 else f"A: {response}")
+                        print(f"Time: {response_time:.2f}s")
+                    except Exception as e:
+                        print(f"Error processing question: {e}")
+                        # Add a placeholder response
+                        results["responses"]["by_question_type"][question_type].append({
+                            "question": question,
+                            "response": f"Error: {str(e)}",
+                            "response_time": 0.0,
+                            "prompt_category": category
+                        })
+                
+                # Evaluate all responses for this question type
+                print(f"\nEvaluating all {question_type} responses with {evaluator_model}...")
+                for i, response_data in enumerate(results["responses"]["by_question_type"][question_type]):
+                    question = response_data["question"]
+                    response = response_data["response"]
+                    response_time = response_data["response_time"]
+                    
+                    try:
+                        # Evaluate response
+                        metrics = EvaluationMetrics.evaluate_response(
+                            response, question, category, evaluator_llm
+                        )
+                        metrics["response_time"] = response_time
+                        metrics["prompt_category"] = category
+                        
+                        # Store metrics
+                        results["metrics"]["by_question_type"][question_type].append(metrics)
+                        
+                        # Print progress
+                        print(f"Evaluated Q{i+1}: Score: {metrics.get('overall_score', 'N/A')}/10")
+                    except Exception as e:
+                        print(f"Error evaluating response {i+1}: {e}")
+                        # Add placeholder metrics
+                        results["metrics"]["by_question_type"][question_type].append({
+                            "overall_score": 0.0,
+                            "authenticity_score": 0.0,
+                            "technical_score": 0.0,
+                            "emotional_score": 0.0,
+                            "quality_score": 0.0,
+                            "response_time": response_time,
+                            "question_type": question_type,
+                            "prompt_category": category,
+                            "weighted_score": 0.0
+                        })
+        else:
+            # Original mode: Run tests for each prompt category
+            for category in prompt_categories:
+                print(f"\n{'='*50}")
+                print(f"Testing with {category} prompt")
+                print(f"{'='*50}")
+                
+                # Get the specialized prompt for this category
+                if baseline_mode:
+                    # Use a minimal prompt for baseline mode
+                    minimal_prompt = """
+You are Viktor, a brilliant scientist from the show Arcane. You are pragmatic, determined, and stoic.
+You speak with precise technical language and tend toward brevity.
+"""
+                    specialized_prompt = minimal_prompt
+                    print("Using minimal baseline prompt")
+                else:
+                    specialized_prompt = get_specialized_prompt(category, evaluator_config)
+                
+                # Initialize ViktorAI with this prompt
+                config = Config(
+                    model_name=model_name,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                
+                # Create a custom ViktorAI instance with the specialized prompt
                 try:
-                    # Evaluate response
-                    metrics = EvaluationMetrics.evaluate_response(
-                        response, question, category, evaluator_llm
-                    )
-                    metrics["response_time"] = response_time
-                    
-                    # Store metrics
-                    results["metrics"][category].append(metrics)
-                    
-                    # Print progress
-                    print(f"Evaluated Q{i+1}: Score: {metrics.get('overall_score', 'N/A')}/10")
+                    if use_mock:
+                        # Create a mock implementation
+                        viktor_ai = create_custom_viktor_ai(config, specialized_prompt)
+                        # Replace the LLM with a mock implementation
+                        viktor_ai.llm = MockOllamaInterface(config)
+                    else:
+                        viktor_ai = create_custom_viktor_ai(config, specialized_prompt)
                 except Exception as e:
-                    print(f"Error evaluating response {i+1}: {e}")
-                    # Add placeholder metrics
-                    results["metrics"][category].append({
-                        "overall_score": 0.0,
-                        "overall_reasoning": f"Error evaluating response: {str(e)}",
-                        "authenticity_score": 0.0,
-                        "authenticity_reasoning": "Error evaluating response",
-                        "technical_score": 0.0,
-                        "technical_reasoning": "Error evaluating response",
-                        "emotional_score": 0.0,
-                        "emotional_reasoning": "Error evaluating response",
-                        "quality_score": 0.0,
-                        "quality_reasoning": "Error evaluating response",
-                        "response_time": response_time
-                    })
+                    print(f"Error creating ViktorAI: {e}")
+                    print("Skipping category: {category}")
+                    continue
                 
+                # Initialize results for this category
+                results["responses"][category] = []
+                results["metrics"][category] = []
+                
+                # Test each question
+                for i, question in enumerate(questions):
+                    print(f"\nQuestion {i+1}/{len(questions)}: {question}")
+                    
+                    try:
+                        # Generate response
+                        start_time = time.time()
+                        response = viktor_ai.generate_response(question)
+                        response_time = time.time() - start_time
+                        
+                        # Store results without evaluation for now
+                        results["responses"][category].append({
+                            "question": question,
+                            "response": response,
+                            "response_time": response_time
+                        })
+                        
+                        # Print progress
+                        print(f"A: {response[:100]}..." if len(response) > 100 else f"A: {response}")
+                        print(f"Time: {response_time:.2f}s")
+                    except Exception as e:
+                        print(f"Error processing question: {e}")
+                        # Add a placeholder response
+                        results["responses"][category].append({
+                            "question": question,
+                            "response": f"Error: {str(e)}",
+                            "response_time": 0.0
+                        })
+                
+                # Initialize metrics for this category
+                results["metrics"][category] = []
+                
+                # Now evaluate all responses at once
+                print(f"\nEvaluating all responses for {category} with {evaluator_model}...")
+                for i, response_data in enumerate(results["responses"][category]):
+                    question = response_data["question"]
+                    response = response_data["response"]
+                    response_time = response_data["response_time"]
+                    
+                    try:
+                        # Evaluate response
+                        metrics = EvaluationMetrics.evaluate_response(
+                            response, question, category, evaluator_llm
+                        )
+                        metrics["response_time"] = response_time
+                        
+                        # Store metrics
+                        results["metrics"][category].append(metrics)
+                        
+                        # Print progress
+                        print(f"Evaluated Q{i+1}: Score: {metrics.get('overall_score', 'N/A')}/10")
+                    except Exception as e:
+                        print(f"Error evaluating response {i+1}: {e}")
+                        # Add placeholder metrics
+                        results["metrics"][category].append({
+                            "overall_score": 0.0,
+                            "authenticity_score": 0.0,
+                            "technical_score": 0.0,
+                            "emotional_score": 0.0,
+                            "quality_score": 0.0,
+                            "response_time": response_time
+                        })
+        
         # Calculate summary statistics
         results["summary"] = calculate_summary_statistics(results["metrics"])
         
@@ -1248,82 +1574,152 @@ def generate_visualizations(results: Dict[str, Any], output_dir: Path, prefix: s
     vis_dir = output_dir / "visualizations"
     vis_dir.mkdir(exist_ok=True, parents=True)
     
-    # Extract data for plotting
-    categories = list(results["metrics"].keys())
+    # Check if we're in category-specific mode
+    category_specific_mode = results['metadata'].get('category_specific_mode', False)
     
-    # Prepare data for overall scores
-    overall_scores = []
-    for category in categories:
-        for metrics in results["metrics"][category]:
-            if "overall_score" in metrics:
-                overall_scores.append({
-                    "category": category,
-                    "overall_score": metrics["overall_score"],
-                    "weighted_score": metrics.get("weighted_score", metrics["overall_score"]),
-                    "authenticity_score": metrics.get("authenticity_score", 0),
-                    "technical_score": metrics.get("technical_score", 0),
-                    "emotional_score": metrics.get("emotional_score", 0),
-                    "quality_score": metrics.get("quality_score", 0),
-                    "question_type": metrics.get("question_type", "unknown"),
-                })
+    # Extract data for plotting
+    if category_specific_mode:
+        # In category-specific mode, we organize by question type
+        overall_scores = []
+        for question_type in results["metrics"]["by_question_type"]:
+            for metrics in results["metrics"]["by_question_type"][question_type]:
+                if "overall_score" in metrics:
+                    overall_scores.append({
+                        "question_type": question_type,
+                        "prompt_category": metrics.get("prompt_category", "unknown"),
+                        "overall_score": metrics["overall_score"],
+                        "weighted_score": metrics.get("weighted_score", metrics["overall_score"]),
+                        "authenticity_score": metrics.get("authenticity_score", 0),
+                        "technical_score": metrics.get("technical_score", 0),
+                        "emotional_score": metrics.get("emotional_score", 0),
+                        "quality_score": metrics.get("quality_score", 0),
+                    })
+    else:
+        # Original mode: organize by category
+        categories = list(results["metrics"].keys())
+        overall_scores = []
+        for category in categories:
+            for metrics in results["metrics"][category]:
+                if "overall_score" in metrics:
+                    overall_scores.append({
+                        "category": category,
+                        "overall_score": metrics["overall_score"],
+                        "weighted_score": metrics.get("weighted_score", metrics["overall_score"]),
+                        "authenticity_score": metrics.get("authenticity_score", 0),
+                        "technical_score": metrics.get("technical_score", 0),
+                        "emotional_score": metrics.get("emotional_score", 0),
+                        "quality_score": metrics.get("quality_score", 0),
+                        "question_type": metrics.get("question_type", "unknown"),
+                    })
     
     if overall_scores:
         # Convert to DataFrame for easier plotting
         df = pd.DataFrame(overall_scores)
         
-        # Plot overall scores by category
-        plt.figure(figsize=(12, 8))
-        numeric_columns = ["overall_score", "weighted_score", "authenticity_score", "technical_score", 
-                          "emotional_score", "quality_score"]
-        boxplot = df.boxplot(column=numeric_columns, by="category", 
-                            rot=45, figsize=(12, 8))
-        plt.title("Score Distribution by Prompt Category")
-        plt.suptitle("")  # Remove pandas default suptitle
-        plt.tight_layout()
-        plt.savefig(vis_dir / f"{prefix}_scores_by_category.png")
-        
-        # Plot average scores by category
-        avg_scores = df.groupby("category")[numeric_columns].mean().reset_index()
-        
-        # Bar chart for average overall scores
-        plt.figure(figsize=(10, 6))
-        plt.bar(avg_scores["category"], avg_scores["overall_score"], color='skyblue', label='Overall Score')
-        plt.bar(avg_scores["category"], avg_scores["weighted_score"], color='lightgreen', alpha=0.7, label='Weighted Score')
-        plt.title("Average Scores by Prompt Category")
-        plt.xlabel("Prompt Category")
-        plt.ylabel("Average Score (1-10)")
-        plt.xticks(rotation=45)
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(vis_dir / f"{prefix}_avg_overall_score.png")
-        
-        # Create a comparison table
-        comparison_table = avg_scores.set_index("category")
-        comparison_table.to_csv(vis_dir / f"{prefix}_score_comparison.csv")
-        
-        # Plot scores by question type
-        if 'question_type' in df.columns:
+        if category_specific_mode:
+            # Plot scores by question type
             plt.figure(figsize=(12, 8))
-            question_type_scores = df.groupby("question_type")[numeric_columns].mean().reset_index()
+            numeric_columns = ["overall_score", "weighted_score", "authenticity_score", "technical_score", 
+                              "emotional_score", "quality_score"]
+            boxplot = df.boxplot(column=numeric_columns, by="question_type", 
+                                rot=45, figsize=(12, 8))
+            plt.title("Score Distribution by Question Type")
+            plt.suptitle("")  # Remove pandas default suptitle
+            plt.tight_layout()
+            plt.savefig(vis_dir / f"{prefix}_scores_by_question_type.png")
             
-            # Bar chart for scores by question type
+            # Plot average scores by question type
+            avg_scores = df.groupby("question_type")[numeric_columns].mean().reset_index()
+            
+            # Bar chart for average overall scores
             plt.figure(figsize=(10, 6))
-            x = range(len(question_type_scores))
+            plt.bar(avg_scores["question_type"], avg_scores["overall_score"], color='skyblue', label='Overall Score')
+            plt.bar(avg_scores["question_type"], avg_scores["weighted_score"], color='lightgreen', alpha=0.7, label='Weighted Score')
+            plt.title("Average Scores by Question Type")
+            plt.xlabel("Question Type")
+            plt.ylabel("Average Score (1-10)")
+            plt.xticks(rotation=45)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(vis_dir / f"{prefix}_avg_overall_score.png")
+            
+            # Create a comparison table
+            comparison_table = avg_scores.set_index("question_type")
+            comparison_table.to_csv(vis_dir / f"{prefix}_score_comparison.csv")
+            
+            # Bar chart for scores by question type with all metrics
+            plt.figure(figsize=(10, 6))
+            x = range(len(avg_scores))
             width = 0.15
             
-            plt.bar([i - width*2 for i in x], question_type_scores["overall_score"], width=width, color='skyblue', label='Overall')
-            plt.bar([i - width for i in x], question_type_scores["weighted_score"], width=width, color='lightgreen', label='Weighted')
-            plt.bar([i for i in x], question_type_scores["authenticity_score"], width=width, color='coral', label='Authenticity')
-            plt.bar([i + width for i in x], question_type_scores["technical_score"], width=width, color='gold', label='Technical')
-            plt.bar([i + width*2 for i in x], question_type_scores["emotional_score"], width=width, color='orchid', label='Emotional')
+            plt.bar([i - width*2 for i in x], avg_scores["overall_score"], width=width, color='skyblue', label='Overall')
+            plt.bar([i - width for i in x], avg_scores["weighted_score"], width=width, color='lightgreen', label='Weighted')
+            plt.bar([i for i in x], avg_scores["authenticity_score"], width=width, color='coral', label='Authenticity')
+            plt.bar([i + width for i in x], avg_scores["technical_score"], width=width, color='gold', label='Technical')
+            plt.bar([i + width*2 for i in x], avg_scores["emotional_score"], width=width, color='orchid', label='Emotional')
             
             plt.title("Average Scores by Question Type")
             plt.xlabel("Question Type")
             plt.ylabel("Average Score (1-10)")
-            plt.xticks([i for i in x], question_type_scores["question_type"], rotation=45)
+            plt.xticks([i for i in x], avg_scores["question_type"], rotation=45)
             plt.legend()
             plt.tight_layout()
-            plt.savefig(vis_dir / f"{prefix}_scores_by_question_type.png")
+            plt.savefig(vis_dir / f"{prefix}_scores_by_metric.png")
+        else:
+            # Original mode: plot by category
+            # Plot overall scores by category
+            plt.figure(figsize=(12, 8))
+            numeric_columns = ["overall_score", "weighted_score", "authenticity_score", "technical_score", 
+                              "emotional_score", "quality_score"]
+            boxplot = df.boxplot(column=numeric_columns, by="category", 
+                                rot=45, figsize=(12, 8))
+            plt.title("Score Distribution by Prompt Category")
+            plt.suptitle("")  # Remove pandas default suptitle
+            plt.tight_layout()
+            plt.savefig(vis_dir / f"{prefix}_scores_by_category.png")
+            
+            # Plot average scores by category
+            avg_scores = df.groupby("category")[numeric_columns].mean().reset_index()
+            
+            # Bar chart for average overall scores
+            plt.figure(figsize=(10, 6))
+            plt.bar(avg_scores["category"], avg_scores["overall_score"], color='skyblue', label='Overall Score')
+            plt.bar(avg_scores["category"], avg_scores["weighted_score"], color='lightgreen', alpha=0.7, label='Weighted Score')
+            plt.title("Average Scores by Prompt Category")
+            plt.xlabel("Prompt Category")
+            plt.ylabel("Average Score (1-10)")
+            plt.xticks(rotation=45)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(vis_dir / f"{prefix}_avg_overall_score.png")
+            
+            # Create a comparison table
+            comparison_table = avg_scores.set_index("category")
+            comparison_table.to_csv(vis_dir / f"{prefix}_score_comparison.csv")
+            
+            # Plot scores by question type
+            if 'question_type' in df.columns:
+                plt.figure(figsize=(12, 8))
+                question_type_scores = df.groupby("question_type")[numeric_columns].mean().reset_index()
+                
+                # Bar chart for scores by question type
+                plt.figure(figsize=(10, 6))
+                x = range(len(question_type_scores))
+                width = 0.15
+                
+                plt.bar([i - width*2 for i in x], question_type_scores["overall_score"], width=width, color='skyblue', label='Overall')
+                plt.bar([i - width for i in x], question_type_scores["weighted_score"], width=width, color='lightgreen', label='Weighted')
+                plt.bar([i for i in x], question_type_scores["authenticity_score"], width=width, color='coral', label='Authenticity')
+                plt.bar([i + width for i in x], question_type_scores["technical_score"], width=width, color='gold', label='Technical')
+                plt.bar([i + width*2 for i in x], question_type_scores["emotional_score"], width=width, color='orchid', label='Emotional')
+                
+                plt.title("Average Scores by Question Type")
+                plt.xlabel("Question Type")
+                plt.ylabel("Average Score (1-10)")
+                plt.xticks([i for i in x], question_type_scores["question_type"], rotation=45)
+                plt.legend()
+                plt.tight_layout()
+                plt.savefig(vis_dir / f"{prefix}_scores_by_question_type.png")
         
         # Create a detailed HTML report
         create_html_report(results, vis_dir / f"{prefix}_report.html")
@@ -1384,6 +1780,9 @@ def parse_arguments():
     
     parser.add_argument("--baseline-mode", action="store_true",
                         help="Use a minimal prompt regardless of category to establish a baseline")
+    
+    parser.add_argument("--category-specific-mode", action="store_true",
+                        help="Use the most appropriate prompt category for each question type")
     
     parser.add_argument("--list-models", action="store_true",
                         help="List available models and exit")
@@ -1719,7 +2118,8 @@ def main():
             output_dir=args.output_dir,
             visualize_only=args.visualize_only,
             use_mock=args.use_mock,
-            baseline_mode=args.baseline_mode
+            baseline_mode=args.baseline_mode,
+            category_specific_mode=args.category_specific_mode
         )
         
         print("\nBenchmark completed successfully!")

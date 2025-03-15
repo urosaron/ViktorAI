@@ -564,7 +564,196 @@ def parse_arguments():
     parser.add_argument("--custom-response", type=str,
                         help="Custom response to evaluate (requires --custom-question)")
     
+    parser.add_argument("--html-report", action="store_true",
+                        help="Generate an HTML report in addition to the Markdown report")
+    
     return parser.parse_args()
+
+def create_html_report(results, output_path):
+    """
+    Create an HTML report from the evaluation results.
+    
+    Args:
+        results: Dictionary containing evaluation results
+        output_path: Path to save the HTML report
+    """
+    # Start building HTML
+    html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViktorAI Evaluator Test Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2, h3, h4, h5 {
+            color: #2c3e50;
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 5px;
+        }
+        .metadata {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .metadata ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .metadata li {
+            margin-bottom: 5px;
+        }
+        .summary {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .response {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+            white-space: pre-wrap;
+        }
+        .evaluation {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e74c3c;
+        }
+        .score {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .reasoning {
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            padding-left: 15px;
+            border-left: 2px solid #bdc3c7;
+        }
+        .divider {
+            height: 1px;
+            background-color: #ddd;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>ViktorAI Evaluator Test Results</h1>
+    
+    <div class="metadata">
+        <ul>
+            <li><strong>Date:</strong> {results['date']}</li>
+            <li><strong>Evaluator Model:</strong> {results['evaluator_model']}</li>
+        </ul>
+    </div>
+    
+    <h2>Summary</h2>
+    <div class="summary">
+        <p>This report contains evaluation results for {results['total_responses']} responses across {results['question_types']} question types.</p>
+    </div>
+"""
+
+    # Add results for each question type
+    for q_type in results['evaluations']:
+        html += f"""
+    <h2>{q_type.capitalize()} Questions</h2>
+    <p>Question: {results['evaluations'][q_type]['question']}</p>
+"""
+        
+        for i, eval_data in enumerate(results['evaluations'][q_type]['responses']):
+            response = eval_data['response']
+            metrics = eval_data['metrics']
+            weighted_score = eval_data['weighted_score']
+            
+            expected_quality = 'Good' if i == 0 else 'Medium' if i == 1 else 'Poor'
+            
+            html += f"""
+    <h3>Response {i+1} (Expected quality: {expected_quality})</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>{response.replace('\n', '<br>')}</p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: {metrics.get('overall_score', 'N/A')}/10</p>
+"""
+            
+            if 'overall_reasoning' in metrics:
+                html += f'<p class="reasoning">{metrics["overall_reasoning"]}</p>'
+            
+            html += f'<p class="score">Weighted Score: {weighted_score:.2f}/10 (based on question type)</p>'
+            
+            html += f'<p class="score">Authenticity Score: {metrics.get("authenticity_score", "N/A")}/10</p>'
+            if 'authenticity_reasoning' in metrics:
+                html += f'<p class="reasoning">{metrics["authenticity_reasoning"]}</p>'
+            
+            html += f'<p class="score">Technical Score: {metrics.get("technical_score", "N/A")}/10</p>'
+            if 'technical_reasoning' in metrics:
+                html += f'<p class="reasoning">{metrics["technical_reasoning"]}</p>'
+            
+            html += f'<p class="score">Emotional Score: {metrics.get("emotional_score", "N/A")}/10</p>'
+            if 'emotional_reasoning' in metrics:
+                html += f'<p class="reasoning">{metrics["emotional_reasoning"]}</p>'
+            
+            html += f'<p class="score">Quality Score: {metrics.get("quality_score", "N/A")}/10</p>'
+            if 'quality_reasoning' in metrics:
+                html += f'<p class="reasoning">{metrics["quality_reasoning"]}</p>'
+            
+            html += """
+    </div>
+    <div class="divider"></div>
+"""
+    
+    # Close HTML
+    html += """
+</body>
+</html>
+"""
+    
+    # Write HTML to file
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
 
 def main():
     """Main function to run the evaluator test."""
@@ -597,6 +786,15 @@ def main():
     from datetime import datetime
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
+    # Prepare results dictionary for HTML report
+    html_results = {
+        'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'evaluator_model': args.evaluator_model,
+        'total_responses': 0,
+        'question_types': 0,
+        'evaluations': {}
+    }
+    
     # Open output file
     output_file = output_dir / f"evaluator_test_{timestamp}.md"
     with open(output_file, "w", encoding="utf-8") as f:
@@ -616,10 +814,28 @@ def main():
             f.write("## Custom Question Evaluation\n\n")
             f.write(output)
             f.write("\n---\n\n")
+            
+            # Add to HTML results
+            question_type = metrics.get('question_type', 'custom')
+            if question_type not in html_results['evaluations']:
+                html_results['evaluations'][question_type] = {
+                    'question': args.custom_question,
+                    'responses': []
+                }
+            
+            html_results['evaluations'][question_type]['responses'].append({
+                'response': args.custom_response,
+                'metrics': metrics,
+                'weighted_score': weighted_score
+            })
+            
+            html_results['total_responses'] += 1
+            html_results['question_types'] = 1
         
         # Otherwise, evaluate sample responses
         else:
             question_types = ["identity", "technical", "relationship", "philosophical"] if args.question_type == "all" else [args.question_type]
+            html_results['question_types'] = len(question_types)
             
             for q_type in question_types:
                 if q_type in SAMPLE_RESPONSES:
@@ -627,6 +843,12 @@ def main():
                     f.write(f"## {q_type.capitalize()} Questions\n\n")
                     
                     question = SAMPLE_RESPONSES[q_type]["question"]
+                    
+                    # Initialize HTML results for this question type
+                    html_results['evaluations'][q_type] = {
+                        'question': question,
+                        'responses': []
+                    }
                     
                     for i, response in enumerate(SAMPLE_RESPONSES[q_type]["responses"]):
                         print(f"  Evaluating response {i+1}...")
@@ -638,8 +860,23 @@ def main():
                         f.write(f"### Response {i+1} (Expected quality: {'Good' if i == 0 else 'Medium' if i == 1 else 'Poor'})\n\n")
                         f.write(output)
                         f.write("\n---\n\n")
+                        
+                        # Add to HTML results
+                        html_results['evaluations'][q_type]['responses'].append({
+                            'response': response,
+                            'metrics': metrics,
+                            'weighted_score': weighted_score
+                        })
+                        
+                        html_results['total_responses'] += 1
     
     print(f"\nEvaluation results saved to {output_file}")
+    
+    # Generate HTML report if requested
+    if args.html_report:
+        html_output_file = output_dir / f"evaluator_test_{timestamp}.html"
+        create_html_report(html_results, html_output_file)
+        print(f"HTML report saved to {html_output_file}")
 
 if __name__ == "__main__":
     main() 
