@@ -45,5 +45,8 @@ vector_store/
 backlog.md
 logbook.md
 model_test_results/
+benchmark_results/
+mock_model_test_results/
+mock_benchmark_results/
 # We're including these files in the repository
 # character_data/ 
