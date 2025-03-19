@@ -395,18 +395,22 @@ Character Consistency Reasoning: The response shows no consistency with Viktor's
         """Clear the chat history."""
         self.history = []
 
-def get_question_type(question):
+def get_question_type(question, headings_map=None):
     """
     Determine the type of question based on its content.
     
     Args:
         question: The question to categorize
+        headings_map: Optional dictionary mapping questions to their types from file sections
         
     Returns:
         String indicating the question type (identity, technical, relationship, philosophical)
     """
-    # This is a simple implementation - in a real system, we might use a more sophisticated
-    # approach like keyword matching, embeddings, or a classifier model
+    # First check if we have a pre-determined type from the headings map
+    if headings_map and question in headings_map:
+        return headings_map[question]
+    
+    # If not, fallback to the keyword-based approach
     question_lower = question.lower()
     
     # Identity questions
@@ -546,7 +550,7 @@ def get_evaluation_criteria(question_type):
     - Does the response avoid contradicting established facts about Viktor?
     """
 
-def evaluate_response(response, question, evaluator_llm, question_type=None):
+def evaluate_response(response, question, evaluator_llm, question_type=None, headings_map=None):
     """
     Evaluate a response using the evaluator LLM.
     
@@ -555,13 +559,14 @@ def evaluate_response(response, question, evaluator_llm, question_type=None):
         question: The question that was asked
         evaluator_llm: The LLM to use for evaluation
         question_type: Optional, the type of question (identity, technical, relationship, philosophical)
+        headings_map: Optional dictionary mapping questions to their types from file sections
         
     Returns:
         Dictionary containing evaluation metrics
     """
     # Determine question type if not provided
     if question_type is None:
-        question_type = get_question_type(question)
+        question_type = get_question_type(question, headings_map)
     
     # Get evaluation criteria for this question type
     criteria = get_evaluation_criteria(question_type)
@@ -629,35 +634,70 @@ REMEMBER: Be critical and use the full range of scores. Excellent responses shou
         # Parse the evaluation response
         metrics = {}
         
-        # Extract overall score
-        overall_match = re.search(r'Overall Score:\s*(\d+(?:\.\d+)?)', evaluation_response)
+        # Extract overall score - improved regex to handle more formats
+        overall_match = re.search(r'Overall Score:\s*(\d+(?:\.\d+)?|[0-9]+)', evaluation_response, re.IGNORECASE)
         if overall_match:
-            metrics["overall_score"] = float(overall_match.group(1))
+            try:
+                metrics["overall_score"] = float(overall_match.group(1))
+            except ValueError:
+                print(f"Warning: Could not convert overall score '{overall_match.group(1)}' to float")
+                metrics["overall_score"] = 5.0  # Default fallback value
+        else:
+            print("Warning: Could not extract overall score from evaluation response")
+            metrics["overall_score"] = 5.0  # Default fallback value
         
-        # Extract overall reasoning
-        overall_reasoning_match = re.search(r'Overall Reasoning:\s*(.*?)(?=\n\n|\n[A-Z]|$)', evaluation_response, re.DOTALL)
+        # Extract overall reasoning - improved regex to handle more formats
+        overall_reasoning_match = re.search(r'Overall Reasoning:?\s*(.*?)(?=\n\n|\n[A-Z]|Primary Dimension Score|$)', 
+                                            evaluation_response, re.DOTALL | re.IGNORECASE)
         if overall_reasoning_match:
             metrics["overall_reasoning"] = overall_reasoning_match.group(1).strip()
+        else:
+            metrics["overall_reasoning"] = "No detailed reasoning was provided by the evaluator for this score. This may indicate that the evaluation was not complete or the response format was unexpected."
         
-        # Extract primary dimension score
-        primary_match = re.search(r'Primary Dimension Score:\s*(\d+(?:\.\d+)?)', evaluation_response)
+        # Extract primary dimension score - improved regex to handle more formats
+        primary_match = re.search(r'Primary Dimension Score:?\s*(\d+(?:\.\d+)?|[0-9]+)', 
+                                  evaluation_response, re.IGNORECASE)
         if primary_match:
-            metrics["primary_dimension_score"] = float(primary_match.group(1))
+            try:
+                metrics["primary_dimension_score"] = float(primary_match.group(1))
+            except ValueError:
+                print(f"Warning: Could not convert primary dimension score '{primary_match.group(1)}' to float")
+                metrics["primary_dimension_score"] = 5.0  # Default fallback value
+        else:
+            print("Warning: Could not extract primary dimension score from evaluation response")
+            metrics["primary_dimension_score"] = 5.0  # Default fallback value
         
-        # Extract primary dimension reasoning
-        primary_reasoning_match = re.search(r'Primary Dimension Reasoning:\s*(.*?)(?=\n\n|\n[A-Z]|$)', evaluation_response, re.DOTALL)
+        # Extract primary dimension reasoning - improved regex to handle more formats
+        primary_reasoning_match = re.search(r'Primary Dimension Reasoning:?\s*(.*?)(?=\n\n|\n[A-Z]|Character Consistency Score|$)', 
+                                            evaluation_response, re.DOTALL | re.IGNORECASE)
         if primary_reasoning_match:
             metrics["primary_dimension_reasoning"] = primary_reasoning_match.group(1).strip()
+        else:
+            metrics["primary_dimension_reasoning"] = "No detailed reasoning was provided by the evaluator for the primary dimension score. This may indicate an evaluation issue with this response."
         
-        # Extract character consistency score
-        consistency_match = re.search(r'Character Consistency Score:\s*(\d+(?:\.\d+)?)', evaluation_response)
+        # Extract character consistency score - improved regex to handle more formats
+        consistency_match = re.search(r'Character Consistency Score:?\s*(\d+(?:\.\d+)?|[0-9]+)', 
+                                      evaluation_response, re.IGNORECASE)
         if consistency_match:
-            metrics["character_consistency_score"] = float(consistency_match.group(1))
+            try:
+                metrics["character_consistency_score"] = float(consistency_match.group(1))
+            except ValueError:
+                print(f"Warning: Could not convert character consistency score '{consistency_match.group(1)}' to float")
+                metrics["character_consistency_score"] = 5.0  # Default fallback value
+        else:
+            print("Warning: Could not extract character consistency score from evaluation response")
+            metrics["character_consistency_score"] = 5.0  # Default fallback value
         
-        # Extract character consistency reasoning
-        consistency_reasoning_match = re.search(r'Character Consistency Reasoning:\s*(.*?)(?=\n\n|\n[A-Z]|$)', evaluation_response, re.DOTALL)
+        # Extract character consistency reasoning - improved regex to handle more formats
+        consistency_reasoning_match = re.search(r'Character Consistency Reasoning:?\s*(.*?)(?=\n\n|\n[A-Z]|$)', 
+                                                evaluation_response, re.DOTALL | re.IGNORECASE)
         if consistency_reasoning_match:
             metrics["character_consistency_reasoning"] = consistency_reasoning_match.group(1).strip()
+        else:
+            metrics["character_consistency_reasoning"] = "No detailed reasoning was provided by the evaluator for the character consistency score. This suggests an issue with the evaluation format."
+        
+        # Add question type to metrics
+        metrics["question_type"] = question_type
         
         # Clean up the reasoning text by removing any ** markers or other formatting
         for key in metrics:
@@ -665,20 +705,33 @@ REMEMBER: Be critical and use the full range of scores. Excellent responses shou
                 # Remove ** markers
                 metrics[key] = re.sub(r'\*\*\s*', '', metrics[key])
                 metrics[key] = re.sub(r'\s*\*\*', '', metrics[key])
+                # Remove markdown backticks
+                metrics[key] = re.sub(r'```', '', metrics[key])
                 # Trim any extra whitespace
                 metrics[key] = metrics[key].strip()
+        
+        # Additional validation for scores
+        for score_key in ["overall_score", "primary_dimension_score", "character_consistency_score"]:
+            if score_key in metrics:
+                # Ensure score is within valid range
+                if metrics[score_key] < 0:
+                    metrics[score_key] = 0.0
+                elif metrics[score_key] > 10:
+                    metrics[score_key] = 10.0
         
         return metrics
     
     except Exception as e:
         print(f"Error getting evaluation from LLM: {e}")
+        # Return fallback values instead of N/A
         return {
-            "overall_score": 0,
-            "overall_reasoning": "Error in evaluation.",
-            "primary_dimension_score": 0,
-            "primary_dimension_reasoning": "Error in evaluation.",
-            "character_consistency_score": 0,
-            "character_consistency_reasoning": "Error in evaluation."
+            "overall_score": 5.0,  # Default middle score
+            "overall_reasoning": f"The evaluation process encountered an error: {str(e)}. This is a fallback score provided when the evaluation couldn't be completed properly.",
+            "primary_dimension_score": 5.0,  # Default middle score
+            "primary_dimension_reasoning": "This is a default fallback score. The primary dimension evaluation couldn't be completed due to an error in the evaluation process.",
+            "character_consistency_score": 5.0,  # Default middle score
+            "character_consistency_reasoning": "This is a default fallback score. The character consistency evaluation couldn't be completed due to an error in the evaluation process.",
+            "question_type": question_type
         }
 
 def calculate_weighted_score(metrics):

@@ -16,11 +16,19 @@ import random
 import shutil
 
 # Add the parent directory to the path to import from src
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.config import Config
-from src.llm_interface import OllamaInterface
-from src.viktor_ai import ViktorAI
+try:
+    from src.config import Config
+    from src.llm_interface import OllamaInterface
+    from src.viktor_ai import ViktorAI
+except ImportError:
+    print("Warning: Failed to import src modules. Make sure you're running from the project root directory.")
+    sys.exit(1)
+
 from tests.test_evaluator import get_question_type, evaluate_response
 
 # Define prompt categories
@@ -53,39 +61,62 @@ class EvaluationMetrics:
         Returns:
             String indicating the question type (identity, technical, relationship, philosophical)
         """
-        # This is a simple implementation - in a real system, we might use a more sophisticated
-        # approach like keyword matching, embeddings, or a classifier model
+        # Use our own implementation instead of importing from test_evaluator.py
+        # This provides more consistent categorization
         question_lower = question.lower()
         
-        # Identity questions
-        if any(keyword in question_lower for keyword in ["who are you", "tell me about yourself", "what's your name", "introduce yourself"]):
-            return "identity"
-        
-        # Technical questions
-        if any(keyword in question_lower for keyword in ["hexcore", "hextech", "technology", "research", "work", "scientific", "limitations", "improve", "applications"]):
-            return "technical"
-        
-        # Relationship questions
-        if any(keyword in question_lower for keyword in ["jayce", "heimerdinger", "sky", "relationship", "friend", "colleague", "thoughts on"]):
-            return "relationship"
-        
-        # Philosophical questions
-        if any(keyword in question_lower for keyword in ["evolution", "glorious", "future", "humanity", "progress", "philosophy", "believe", "think about", "purpose", "divide", "piltover and zaun", "change one decision"]):
-            return "philosophical"
-        
-        # Check for specific questions that might not be caught by the keywords
+        # First check for specific questions that might need special handling
         specific_questions = {
+            "who are you?": "identity",
+            "what's your name?": "identity", 
+            "tell me about yourself.": "identity",
             "how do you feel about your condition?": "identity",
             "what motivates your scientific work?": "identity",
             "what happened when sky tried to help you with the hexcore?": "relationship",
             "how did you feel when jayce presented hextech to the academy?": "relationship",
             "what was your reaction to being dismissed from the hextech project?": "relationship",
             "tell me about your disagreement with heimerdinger about progress and hextech.": "relationship",
-            "what happened during your presentation to the council?": "relationship"
+            "what do you think about jayce's recent focus on politics?": "relationship",
+            "what are your thoughts on heimerdinger?": "relationship",
+            "what happened during your presentation to the council?": "relationship",
+            "what are your thoughts on the divide between piltover and zaun?": "philosophical",
+            "how do you view the relationship between humanity and technology?": "philosophical",
+            "what does \"the glorious evolution\" mean to you?": "philosophical", 
+            "if you could change one decision you made, what would it be?": "philosophical",
+            "what do you think is the purpose of scientific advancement?": "philosophical"
         }
         
-        if question_lower in specific_questions:
-            return specific_questions[question_lower]
+        # Check if this is a specific question we've identified
+        for specific_q, q_type in specific_questions.items():
+            if question_lower.strip() == specific_q.lower():
+                return q_type
+                
+        # Identity questions (check these first)
+        identity_keywords = ["who are you", "tell me about yourself", "your name", "introduce yourself", 
+                         "what are you", "who is viktor", "about yourself"]
+        if any(keyword in question_lower for keyword in identity_keywords):
+            return "identity"
+        
+        # Relationship questions
+        relationship_keywords = ["jayce", "heimerdinger", "sky", "relationship", "friend", "colleague", 
+                             "thoughts on", "feelings about", "feel about", "describe your relationship"]
+        if any(keyword in question_lower for keyword in relationship_keywords):
+            return "relationship"
+        
+        # Philosophical questions
+        philosophical_keywords = ["evolution", "glorious", "future", "humanity", "progress", "philosophy", 
+                               "believe", "think about", "purpose", "divide", "piltover and zaun", 
+                               "change one decision", "ethics", "moral", "right and wrong", "principles",
+                               "values", "meaning", "greater good"]
+        if any(keyword in question_lower for keyword in philosophical_keywords):
+            return "philosophical"
+            
+        # Technical questions (check last as they're often the default)
+        technical_keywords = ["hexcore", "hextech", "technology", "research", "work", "scientific", 
+                          "limitations", "improve", "applications", "experiment", "results", 
+                          "methodology", "theory", "development", "innovation"]
+        if any(keyword in question_lower for keyword in technical_keywords):
+            return "technical"
         
         # Default to identity if we can't determine the type
         return "identity"
@@ -101,86 +132,9 @@ class EvaluationMetrics:
     Returns:
             String containing specific evaluation criteria for this question type
         """
-        if question_type == "identity":
-            return """
-            For this identity question, focus on:
-            - How well the response captures Viktor's self-perception as a scientist focused on progress
-            - Whether it mentions his background from Zaun and work with Hextech
-            - If it conveys his pragmatic, determined, and stoic personality
-            - Whether it uses precise, technical language even when discussing himself
-            
-            Technical details are less important for this question type, but Viktor should still speak
-            with technical precision and focus on his scientific work as central to his identity.
-            
-            Scoring for identity questions:
-            - Authenticity should be weighted heavily (50% of overall score)
-            - Technical accuracy is less important (10% of overall score)
-            - Emotional expression should reflect Viktor's stoicism (20% of overall score)
-            - Quality and coherence remain important (20% of overall score)
-            """
-        
-        elif question_type == "technical":
-            return """
-            For this technical question, focus on:
-            - Accuracy and depth of technical details about Hextech/Hexcore
-            - Use of precise scientific terminology and concepts
-            - Logical and methodical explanation of technical concepts
-            - Whether the response demonstrates deep understanding of the technology
-            
-            Emotional expression is less important for this question type, but Viktor should still
-            show subtle enthusiasm when discussing scientific progress.
-            
-            Scoring for technical questions:
-            - Technical accuracy should be weighted heavily (50% of overall score)
-            - Authenticity remains important (20% of overall score)
-            - Emotional expression is less critical (10% of overall score)
-            - Quality and coherence remain important (20% of overall score)
-            """
-        
-        elif question_type == "relationship":
-            return """
-            For this relationship question, focus on:
-            - How well the response captures Viktor's professional and somewhat detached approach to relationships
-            - Whether it emphasizes pragmatic collaboration over emotional connection
-            - If it maintains Viktor's focus on work and progress even when discussing others
-            - Whether it accurately reflects Viktor's known relationships from the show
-            
-            Technical details are less important here, but Viktor should still frame relationships
-            in terms of their utility to his work and scientific progress.
-            
-            Scoring for relationship questions:
-            - Authenticity should be weighted heavily (40% of overall score)
-            - Emotional expression is more important here (30% of overall score)
-            - Technical accuracy is less critical (10% of overall score)
-            - Quality and coherence remain important (20% of overall score)
-            """
-        
-        elif question_type == "philosophical":
-            return """
-            For this philosophical question, focus on:
-            - How well the response captures Viktor's worldview and values
-            - Whether it emphasizes progress, evolution, and transcending human limitations
-            - If it frames philosophical concepts in technical, practical terms rather than abstract ones
-            - Whether it maintains Viktor's pragmatic approach even to philosophical questions
-            
-            Viktor should approach philosophical questions with scientific precision, framing abstract
-            concepts in concrete, practical terms related to his work.
-            
-            Scoring for philosophical questions:
-            - Authenticity should be weighted heavily (40% of overall score)
-            - Technical accuracy is important as Viktor frames philosophy in technical terms (30% of overall score)
-            - Emotional expression should reflect Viktor's passion for progress (10% of overall score)
-            - Quality and coherence remain important (20% of overall score)
-            """
-        
-        # Default criteria if we can't determine the type
-        return """
-        Focus on how well the response captures Viktor's character overall, including:
-        - His identity as a scientist from Zaun
-        - His technical knowledge and approach
-        - His pragmatic, determined personality
-        - His stoic emotional expression
-        """
+        # Ensure we're using the same evaluation criteria as in test_evaluator.py
+        from tests.test_evaluator import get_evaluation_criteria
+        return get_evaluation_criteria(question_type)
     
     @staticmethod
     def calculate_weighted_score(metrics):
@@ -246,8 +200,13 @@ class EvaluationMetrics:
         Returns:
             Dictionary containing evaluation metrics
         """
-        # Determine question type
-        question_type = EvaluationMetrics.get_question_type(question)
+        # Determine question type from question type parameter in metrics or the question content
+        if hasattr(question, "question_type"):
+            # If we're passed a dict or object with question_type attribute
+            question_type = question.question_type
+        else:
+            # Use the question_type passed to us
+            question_type = "identity"  # Default
         
         # Handle mock implementation specifically
         if hasattr(evaluator_llm, 'config') and isinstance(evaluator_llm.config, MockConfig):
@@ -268,11 +227,11 @@ class EvaluationMetrics:
                 "response_time": 0.0
             }
         
-        # Use the improved evaluator from test_evaluator.py
+        # Use the evaluate_response function from test_evaluator.py
         from tests.test_evaluator import evaluate_response as test_evaluator_evaluate_response
         
         try:
-            # Call the improved evaluator with specified question type
+            # Call the evaluator with specified question type
             metrics = test_evaluator_evaluate_response(response, question, evaluator_llm, question_type)
             
             # Add the question type to the metrics
@@ -287,12 +246,12 @@ class EvaluationMetrics:
             print(f"Error evaluating response: {e}")
             # Return default scores with error message
             return {
-                "overall_score": 3.0,
-                "overall_reasoning": f"Error evaluating response: {str(e)}",
-                "primary_dimension_score": 3.0,
-                "primary_dimension_reasoning": "Error evaluating response",
-                "character_consistency_score": 3.0,
-                "character_consistency_reasoning": "Error evaluating response",
+                "overall_score": 5.0,  # Using 5.0 instead of 3.0 to be consistent with test_evaluator.py
+                "overall_reasoning": f"The evaluation process encountered an error: {str(e)}. This is a fallback score provided when the evaluation couldn't be completed properly.",
+                "primary_dimension_score": 5.0,  # Using 5.0 instead of 3.0 to be consistent
+                "primary_dimension_reasoning": "This is a default fallback score. The primary dimension evaluation couldn't be completed due to an error in the evaluation process.",
+                "character_consistency_score": 5.0,  # Using 5.0 instead of 3.0 to be consistent
+                "character_consistency_reasoning": "This is a default fallback score. The character consistency evaluation couldn't be completed due to an error in the evaluation process.",
                 "question_type": question_type,
                 "response_time": 0.0
             }
@@ -323,11 +282,40 @@ def get_specialized_prompt(category, config):
         # Default prompt
         return "You are Viktor, a character from the show Arcane."
 
-def create_custom_viktor_ai(config, specialized_prompt):
-    # Create a custom ViktorAI instance with the specialized prompt
-    viktor_ai = ViktorAI(config)
-    # Set the specialized prompt (implementation depends on ViktorAI class)
-    return viktor_ai
+def create_custom_viktor_ai(config, specialized_prompt, use_mock=False, mock_inference=None):
+    """
+    Create a custom ViktorAI instance with the specialized prompt.
+    
+    Args:
+        config: Configuration object
+        specialized_prompt: The specialized prompt to use
+        use_mock: Whether to use a mock implementation for both config and inference
+        mock_inference: Whether to use a mock implementation just for inference
+        
+    Returns:
+        ViktorAI instance with the specialized prompt
+    """
+    # Determine if we should use mock inference
+    if mock_inference is None:
+        mock_inference = use_mock
+        
+    # Check if this is a mock config or if we should use mock inference
+    if mock_inference:
+        return MockViktorAI(config, specialized_prompt)
+    
+    # Create a real ViktorAI instance
+    try:
+        viktor_ai = ViktorAI(config)
+        
+        # Set the specialized prompt
+        if specialized_prompt:
+            viktor_ai.system_prompt = specialized_prompt
+        
+        return viktor_ai
+    except Exception as e:
+        print(f"Error creating ViktorAI instance: {e}")
+        print("Using mock implementation instead")
+        return MockViktorAI(config, specialized_prompt)
 
 def calculate_summary_statistics(results):
     """
@@ -339,131 +327,138 @@ def calculate_summary_statistics(results):
     Returns:
         Dictionary containing summary statistics
     """
-    # Initialize summary statistics
-    summary_stats = {
+    # Initialize summary dictionary
+    summary = {
+        "by_category": {},
+        "by_question_type": {},
         "overall": {
-            "avg_overall_score": 0.0,
-            "std_overall_score": 0.0,
-            "avg_primary_dimension_score": 0.0,
-            "std_primary_dimension_score": 0.0,
-            "avg_character_consistency_score": 0.0,
-            "std_character_consistency_score": 0.0,
-            "avg_response_time": 0.0,
-            "std_response_time": 0.0,
-            "total_questions": 0
-        },
-        "by_question_type": {
-            "identity": {
-                "avg_overall_score": 0.0,
-                "std_overall_score": 0.0,
-                "avg_primary_dimension_score": 0.0,
-                "std_primary_dimension_score": 0.0,
-                "avg_character_consistency_score": 0.0,
-                "std_character_consistency_score": 0.0,
-                "avg_response_time": 0.0,
-                "std_response_time": 0.0,
-                "total_questions": 0
-            },
-            "technical": {
-                "avg_overall_score": 0.0,
-                "std_overall_score": 0.0,
-                "avg_primary_dimension_score": 0.0,
-                "std_primary_dimension_score": 0.0,
-                "avg_character_consistency_score": 0.0,
-                "std_character_consistency_score": 0.0,
-                "avg_response_time": 0.0,
-                "std_response_time": 0.0,
-                "total_questions": 0
-            },
-            "relationship": {
-                "avg_overall_score": 0.0,
-                "std_overall_score": 0.0,
-                "avg_primary_dimension_score": 0.0,
-                "std_primary_dimension_score": 0.0,
-                "avg_character_consistency_score": 0.0,
-                "std_character_consistency_score": 0.0,
-                "avg_response_time": 0.0,
-                "std_response_time": 0.0,
-                "total_questions": 0
-            },
-            "philosophical": {
-                "avg_overall_score": 0.0,
-                "std_overall_score": 0.0,
-                "avg_primary_dimension_score": 0.0,
-                "std_primary_dimension_score": 0.0,
-                "avg_character_consistency_score": 0.0,
-                "std_character_consistency_score": 0.0,
-                "avg_response_time": 0.0,
-                "std_response_time": 0.0,
-                "total_questions": 0
-            }
+            "overall_scores": [],
+            "primary_scores": [],
+            "consistency_scores": [],
+            "response_times": [],
+            "total_responses": 0
         }
     }
     
-    # Collect metrics across all categories
-    all_metrics = []
-    for category in results["metrics"]:
-        all_metrics.extend(results["metrics"][category])
+    # Process metrics for each category
+    for category, metrics_list in results["metrics"].items():
+        # Skip categories with no metrics
+        if not metrics_list:
+            continue
+        
+        # Initialize category summary
+        summary["by_category"][category] = {
+            "overall_scores": [],
+            "primary_scores": [],
+            "consistency_scores": [],
+            "response_times": [],
+            "total_responses": 0
+        }
+        
+        # Process each metric in this category
+        for metrics in metrics_list:
+            question_type = metrics.get("question_type", "unknown")
+            
+            # Add to overall summary
+            if "overall_score" in metrics:
+                summary["overall"]["overall_scores"].append(metrics["overall_score"])
+            if "primary_dimension_score" in metrics:
+                summary["overall"]["primary_scores"].append(metrics["primary_dimension_score"])
+            if "character_consistency_score" in metrics:
+                summary["overall"]["consistency_scores"].append(metrics["character_consistency_score"])
+            if "response_time" in metrics:
+                summary["overall"]["response_times"].append(metrics["response_time"])
+            
+            summary["overall"]["total_responses"] += 1
+            
+            # Add to category summary
+            if "overall_score" in metrics:
+                summary["by_category"][category]["overall_scores"].append(metrics["overall_score"])
+            if "primary_dimension_score" in metrics:
+                summary["by_category"][category]["primary_scores"].append(metrics["primary_dimension_score"])
+            if "character_consistency_score" in metrics:
+                summary["by_category"][category]["consistency_scores"].append(metrics["character_consistency_score"])
+            if "response_time" in metrics:
+                summary["by_category"][category]["response_times"].append(metrics["response_time"])
+            
+            summary["by_category"][category]["total_responses"] += 1
+            
+            # Initialize question type summary if needed
+            if question_type not in summary["by_question_type"]:
+                summary["by_question_type"][question_type] = {
+                    "overall_scores": [],
+                    "primary_scores": [],
+                    "consistency_scores": [],
+                    "response_times": [],
+                    "total_responses": 0
+                }
+            
+            # Add to question type summary
+            if "overall_score" in metrics:
+                summary["by_question_type"][question_type]["overall_scores"].append(metrics["overall_score"])
+            if "primary_dimension_score" in metrics:
+                summary["by_question_type"][question_type]["primary_scores"].append(metrics["primary_dimension_score"])
+            if "character_consistency_score" in metrics:
+                summary["by_question_type"][question_type]["consistency_scores"].append(metrics["character_consistency_score"])
+            if "response_time" in metrics:
+                summary["by_question_type"][question_type]["response_times"].append(metrics["response_time"])
+            
+            summary["by_question_type"][question_type]["total_responses"] += 1
     
-    # Calculate overall statistics
-    if all_metrics:
-        # Extract scores and response times
-        overall_scores = [float(m.get("overall_score", 0)) for m in all_metrics if "overall_score" in m]
-        primary_dimension_scores = [float(m.get("primary_dimension_score", 0)) for m in all_metrics if "primary_dimension_score" in m]
-        character_consistency_scores = [float(m.get("character_consistency_score", 0)) for m in all_metrics if "character_consistency_score" in m]
-        response_times = [float(m.get("response_time", 0)) for m in all_metrics if "response_time" in m]
-        
-        # Calculate overall statistics
-        if overall_scores:
-            summary_stats["overall"]["avg_overall_score"] = sum(overall_scores) / len(overall_scores)
-            summary_stats["overall"]["std_overall_score"] = (sum((x - summary_stats["overall"]["avg_overall_score"]) ** 2 for x in overall_scores) / len(overall_scores)) ** 0.5 if len(overall_scores) > 1 else 0
-        
-        if primary_dimension_scores:
-            summary_stats["overall"]["avg_primary_dimension_score"] = sum(primary_dimension_scores) / len(primary_dimension_scores)
-            summary_stats["overall"]["std_primary_dimension_score"] = (sum((x - summary_stats["overall"]["avg_primary_dimension_score"]) ** 2 for x in primary_dimension_scores) / len(primary_dimension_scores)) ** 0.5 if len(primary_dimension_scores) > 1 else 0
-        
-        if character_consistency_scores:
-            summary_stats["overall"]["avg_character_consistency_score"] = sum(character_consistency_scores) / len(character_consistency_scores)
-            summary_stats["overall"]["std_character_consistency_score"] = (sum((x - summary_stats["overall"]["avg_character_consistency_score"]) ** 2 for x in character_consistency_scores) / len(character_consistency_scores)) ** 0.5 if len(character_consistency_scores) > 1 else 0
-        
-        if response_times:
-            summary_stats["overall"]["avg_response_time"] = sum(response_times) / len(response_times)
-            summary_stats["overall"]["std_response_time"] = (sum((x - summary_stats["overall"]["avg_response_time"]) ** 2 for x in response_times) / len(response_times)) ** 0.5 if len(response_times) > 1 else 0
-        
-        summary_stats["overall"]["total_questions"] = len(all_metrics)
+    # Calculate averages for overall summary
+    if summary["overall"]["overall_scores"]:
+        summary["overall"]["avg_overall_score"] = sum(summary["overall"]["overall_scores"]) / len(summary["overall"]["overall_scores"])
+    if summary["overall"]["primary_scores"]:
+        summary["overall"]["avg_primary_dimension_score"] = sum(summary["overall"]["primary_scores"]) / len(summary["overall"]["primary_scores"])
+    if summary["overall"]["consistency_scores"]:
+        summary["overall"]["avg_character_consistency_score"] = sum(summary["overall"]["consistency_scores"]) / len(summary["overall"]["consistency_scores"])
+    if summary["overall"]["response_times"]:
+        summary["overall"]["avg_response_time"] = sum(summary["overall"]["response_times"]) / len(summary["overall"]["response_times"])
     
-    # Calculate statistics by question type
-    for question_type in ["identity", "technical", "relationship", "philosophical"]:
-        # Filter metrics by question type
-        metrics_by_type = [m for m in all_metrics if m.get("question_type", "").lower() == question_type]
+    # Calculate averages for each category
+    for category in summary["by_category"]:
+        cat_summary = summary["by_category"][category]
         
-        if metrics_by_type:
-            # Extract scores and response times
-            overall_scores = [float(m.get("overall_score", 0)) for m in metrics_by_type if "overall_score" in m]
-            primary_dimension_scores = [float(m.get("primary_dimension_score", 0)) for m in metrics_by_type if "primary_dimension_score" in m]
-            character_consistency_scores = [float(m.get("character_consistency_score", 0)) for m in metrics_by_type if "character_consistency_score" in m]
-            response_times = [float(m.get("response_time", 0)) for m in metrics_by_type if "response_time" in m]
-            
-            # Calculate statistics
-            if overall_scores:
-                summary_stats["by_question_type"][question_type]["avg_overall_score"] = sum(overall_scores) / len(overall_scores)
-                summary_stats["by_question_type"][question_type]["std_overall_score"] = (sum((x - summary_stats["by_question_type"][question_type]["avg_overall_score"]) ** 2 for x in overall_scores) / len(overall_scores)) ** 0.5 if len(overall_scores) > 1 else 0
-            
-            if primary_dimension_scores:
-                summary_stats["by_question_type"][question_type]["avg_primary_dimension_score"] = sum(primary_dimension_scores) / len(primary_dimension_scores)
-                summary_stats["by_question_type"][question_type]["std_primary_dimension_score"] = (sum((x - summary_stats["by_question_type"][question_type]["avg_primary_dimension_score"]) ** 2 for x in primary_dimension_scores) / len(primary_dimension_scores)) ** 0.5 if len(primary_dimension_scores) > 1 else 0
-            
-            if character_consistency_scores:
-                summary_stats["by_question_type"][question_type]["avg_character_consistency_score"] = sum(character_consistency_scores) / len(character_consistency_scores)
-                summary_stats["by_question_type"][question_type]["std_character_consistency_score"] = (sum((x - summary_stats["by_question_type"][question_type]["avg_character_consistency_score"]) ** 2 for x in character_consistency_scores) / len(character_consistency_scores)) ** 0.5 if len(character_consistency_scores) > 1 else 0
-            
-            if response_times:
-                summary_stats["by_question_type"][question_type]["avg_response_time"] = sum(response_times) / len(response_times)
-                summary_stats["by_question_type"][question_type]["std_response_time"] = (sum((x - summary_stats["by_question_type"][question_type]["avg_response_time"]) ** 2 for x in response_times) / len(response_times)) ** 0.5 if len(response_times) > 1 else 0
-            
-            summary_stats["by_question_type"][question_type]["total_questions"] = len(metrics_by_type)
+        if cat_summary["overall_scores"]:
+            cat_summary["avg_overall_score"] = sum(cat_summary["overall_scores"]) / len(cat_summary["overall_scores"])
+        if cat_summary["primary_scores"]:
+            cat_summary["avg_primary_dimension_score"] = sum(cat_summary["primary_scores"]) / len(cat_summary["primary_scores"])
+        if cat_summary["consistency_scores"]:
+            cat_summary["avg_character_consistency_score"] = sum(cat_summary["consistency_scores"]) / len(cat_summary["consistency_scores"])
+        if cat_summary["response_times"]:
+            cat_summary["avg_response_time"] = sum(cat_summary["response_times"]) / len(cat_summary["response_times"])
+        
+        # Calculate question type distribution for this category
+        cat_summary["question_type_distribution"] = {}
+        for metrics in results["metrics"][category]:
+            question_type = metrics.get("question_type", "unknown")
+            if question_type not in cat_summary["question_type_distribution"]:
+                cat_summary["question_type_distribution"][question_type] = 0
+            cat_summary["question_type_distribution"][question_type] += 1
     
-    return summary_stats
+    # Calculate averages for each question type
+    for qtype in summary["by_question_type"]:
+        qtype_summary = summary["by_question_type"][qtype]
+        
+        if qtype_summary["overall_scores"]:
+            qtype_summary["avg_overall_score"] = sum(qtype_summary["overall_scores"]) / len(qtype_summary["overall_scores"])
+        if qtype_summary["primary_scores"]:
+            qtype_summary["avg_primary_dimension_score"] = sum(qtype_summary["primary_scores"]) / len(qtype_summary["primary_scores"])
+        if qtype_summary["consistency_scores"]:
+            qtype_summary["avg_character_consistency_score"] = sum(qtype_summary["consistency_scores"]) / len(qtype_summary["consistency_scores"])
+        if qtype_summary["response_times"]:
+            qtype_summary["avg_response_time"] = sum(qtype_summary["response_times"]) / len(qtype_summary["response_times"])
+        
+        # Calculate category distribution for this question type
+        qtype_summary["category_distribution"] = {}
+        for category, metrics_list in results["metrics"].items():
+            for metrics in metrics_list:
+                if metrics.get("question_type", "unknown") == qtype:
+                    if category not in qtype_summary["category_distribution"]:
+                        qtype_summary["category_distribution"][category] = 0
+                    qtype_summary["category_distribution"][category] += 1
+    
+    return summary
 
 def get_available_models():
     """
@@ -489,18 +484,41 @@ def get_available_models():
 
 def load_test_questions(questions_file, use_mock=False):
     """
-    Load test questions from a file.
+    Load test questions from a file and their categories based on section headings.
     
     Args:
         questions_file: Path to the file containing questions.
         use_mock: Whether to use mock questions if the file doesn't exist.
         
     Returns:
-        List of questions.
+        List of tuples containing (question, question_type).
     """
     try:
         with open(questions_file, "r", encoding="utf-8") as f:
-            return [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
+            lines = f.readlines()
+            
+        questions_with_types = []
+        current_type = "identity"  # Default type
+        
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                # Check if this is a heading that indicates question type
+                if "general character questions" in line.lower():
+                    current_type = "identity"
+                elif "specific scene questions" in line.lower() or "relationship questions" in line.lower():
+                    current_type = "relationship"
+                elif "technical questions" in line.lower():
+                    current_type = "technical"
+                elif "philosophical questions" in line.lower():
+                    current_type = "philosophical"
+                # Skip empty lines and comments
+                continue
+            
+            # Add the question with its type
+            questions_with_types.append((line, current_type))
+            
+        return questions_with_types
     except FileNotFoundError:
         print(f"Error loading test questions: [Errno 2] No such file or directory: '{questions_file}'")
         
@@ -508,18 +526,18 @@ def load_test_questions(questions_file, use_mock=False):
         if use_mock:
             print("Creating mock test questions")
             mock_questions = [
-                "Who are you?",
-                "What is your name?",
-                "Tell me about yourself.",
-                "Tell me about your work with the Hexcore.",
-                "How does your technology work?",
-                "What advancements have you made in your research?",
-                "How would you describe your relationship with Jayce?",
-                "What happened when Sky tried to help you with the Hexcore?",
-                "How did you feel when Jayce presented Hextech to the Academy?",
-                "What does 'the glorious evolution' mean to you?",
-                "What is your vision for humanity's future?",
-                "Do you think there are limits to what science should achieve?"
+                ("Who are you?", "identity"),
+                ("What is your name?", "identity"),
+                ("Tell me about yourself.", "identity"),
+                ("Tell me about your work with the Hexcore.", "technical"),
+                ("How does your technology work?", "technical"),
+                ("What advancements have you made in your research?", "technical"),
+                ("How would you describe your relationship with Jayce?", "relationship"),
+                ("What happened when Sky tried to help you with the Hexcore?", "relationship"),
+                ("How did you feel when Jayce presented Hextech to the Academy?", "relationship"),
+                ("What does 'the glorious evolution' mean to you?", "philosophical"),
+                ("What is your vision for humanity's future?", "philosophical"),
+                ("Do you think there are limits to what science should achieve?", "philosophical")
             ]
             
             # Handle path properly - if no directory specified, just use the file name in current dir
@@ -529,28 +547,49 @@ def load_test_questions(questions_file, use_mock=False):
             
             # Write the mock questions to the file
             with open(questions_file, "w", encoding="utf-8") as f:
-                for question in mock_questions:
-                    f.write(f"{question}\n")
+                f.write("# ViktorAI Model Test Questions\n")
+                f.write("# One question per line, lines starting with # are ignored\n\n")
+                
+                f.write("# General character questions\n")
+                for question, qtype in mock_questions:
+                    if qtype == "identity":
+                        f.write(f"{question}\n")
+                
+                f.write("\n# Specific scene questions\n")
+                for question, qtype in mock_questions:
+                    if qtype == "relationship":
+                        f.write(f"{question}\n")
+                
+                f.write("\n# Technical questions\n")
+                for question, qtype in mock_questions:
+                    if qtype == "technical":
+                        f.write(f"{question}\n")
+                
+                f.write("\n# Philosophical questions\n")
+                for question, qtype in mock_questions:
+                    if qtype == "philosophical":
+                        f.write(f"{question}\n")
             
             return mock_questions
         
         return []
 
-def run_benchmark(questions, model_name, prompt_categories=None, temperature=0.7, max_tokens=1000,
+def run_benchmark(questions_with_types, model_name, prompt_categories=None, temperature=0.7, max_tokens=1000,
                  evaluator_model="llama3", output_dir="benchmark_results", use_mock=False,
-                 category_specific_mode=False):
+                 mock_inference=None, category_specific_mode=False):
     """
     Run a benchmark with the specified parameters.
     
     Args:
-        questions: List of questions to ask
+        questions_with_types: List of tuples containing (question, question_type)
         model_name: Name of the model to benchmark
         prompt_categories: List of prompt categories to test
         temperature: Temperature for generation
         max_tokens: Maximum tokens for generation
         evaluator_model: Name of the model to use for evaluation
         output_dir: Directory to save results
-        use_mock: Whether to use mock implementations
+        use_mock: Whether to use mock implementations for everything
+        mock_inference: Whether to use mock implementations for inference only (overrides use_mock for inference)
         category_specific_mode: Whether to use category-specific mode
         
     Returns:
@@ -561,6 +600,12 @@ def run_benchmark(questions, model_name, prompt_categories=None, temperature=0.7
     print(f"Temperature: {temperature}")
     print(f"Max tokens: {max_tokens}")
     print(f"Using mock: {use_mock}")
+    
+    # Determine what to mock
+    if mock_inference is None:
+        mock_inference = use_mock
+    
+    print(f"Using mock inference: {mock_inference}")
     print(f"Category-specific mode: {category_specific_mode}")
     
     # Create base output directory
@@ -594,6 +639,9 @@ def run_benchmark(questions, model_name, prompt_categories=None, temperature=0.7
     raw_data_dir.mkdir(exist_ok=True)
     visualizations_dir.mkdir(exist_ok=True)
     
+    # Extract just the questions for storing in results
+    questions = [q for q, _ in questions_with_types]
+    
     # Initialize results dictionary
     results = {
         "model_name": model_name,
@@ -602,213 +650,249 @@ def run_benchmark(questions, model_name, prompt_categories=None, temperature=0.7
         "max_tokens": max_tokens,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "use_mock": use_mock,
+        "mock_inference": mock_inference,
         "category_specific_mode": category_specific_mode,
         "metrics": {},
         "questions": questions
     }
     
-    # Initialize config for the model
-    if use_mock:
-        config = MockConfig(
-            model_name=model_name,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
-        
-        # Initialize evaluator config
-        evaluator_config = MockConfig(
-            model_name=evaluator_model,
-            temperature=0.2,  # Lower temperature for more consistent evaluations
-            max_tokens=1000
-        )
-    else:
-        config = Config(
-            model_name=model_name,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
-        
-        # Initialize evaluator config
-        evaluator_config = Config(
-            model_name=evaluator_model,
-            temperature=0.2,  # Lower temperature for more consistent evaluations
-            max_tokens=1000
-        )
-    
-    # Initialize LLM interfaces
-    if use_mock:
-        print("Using mock implementations")
-        # Create mock implementations
-        viktor_ai = MockViktorAI(config)
-        evaluator_llm = MockOllamaInterface(evaluator_config)
-    else:
-        try:
-            # Create real implementations
-            viktor_ai = ViktorAI(config)
-            evaluator_llm = OllamaInterface(evaluator_config)
-            print(f"Viktor AI initialized with model: {config.model_name}")
-            print(f"Evaluator initialized with model: {evaluator_config.model_name}")
-        except Exception as e:
-            print(f"Error initializing LLM interfaces: {e}")
-            print("Falling back to mock implementations")
-            # Create mock implementations as fallback
-            viktor_ai = MockViktorAI(config)
-            evaluator_llm = MockOllamaInterface(evaluator_config)
-    
-    # Determine which categories to test
+    # Set default prompt categories if not provided
     if prompt_categories is None:
         prompt_categories = list(PROMPT_CATEGORIES.keys())
     
-    # Initialize metrics for each category
+    # Initialize metrics dictionary for each category
     for category in prompt_categories:
         results["metrics"][category] = []
-        
-    # Also initialize metrics for categories used in the mapping
-    for category in set(QUESTION_CATEGORY_MAPPING.values()):
-        if category not in results["metrics"]:
-            results["metrics"][category] = []
     
-    # Run the benchmark
+    # Load character data from config
+    config = MockConfig(model_name, temperature, max_tokens) if use_mock else Config(model_name=model_name, temperature=temperature, max_tokens=max_tokens)
+    
+    # Setup Viktor and evaluator
+    evaluator_config = MockConfig(evaluator_model, temperature=0.7, max_tokens=2000) if use_mock else Config(model_name=evaluator_model, temperature=0.7, max_tokens=2000)
+    
+    # Initialize the Viktor AI with the base configuration
+    viktor_ai = create_custom_viktor_ai(config, None, use_mock, mock_inference)
+    print(f"Viktor AI initialized with model: {model_name}")
+    
+    # Initialize the evaluator
+    evaluator = MockOllamaInterface(evaluator_config) if use_mock else OllamaInterface(evaluator_config)
+    print(f"Evaluator initialized with model: {evaluator_model}")
+    
     if category_specific_mode:
         print("Using category-specific mode")
-        # Map questions to appropriate categories
-        questions_by_type = {}
-        for question in questions:
-            question_type = EvaluationMetrics.get_question_type(question)
-            if question_type not in questions_by_type:
-                questions_by_type[question_type] = []
-            questions_by_type[question_type].append(question)
         
-        # Process each question type
+        # Group questions by type
+        questions_by_type = {
+            "identity": [],
+            "technical": [],
+            "relationship": [],
+            "philosophical": []
+        }
+        
+        # Organize questions by their types
+        for question, question_type in questions_with_types:
+            if question_type in questions_by_type:
+                questions_by_type[question_type].append(question)
+        
+        # Map question types to prompt categories
+        type_to_category = {
+            "identity": "personality_focused",
+            "technical": "technical_focused",
+            "relationship": "relationship_focused",
+            "philosophical": "full"
+        }
+        
+        # Process each question type with its appropriate prompt category
         for question_type, type_questions in questions_by_type.items():
-            # Get the appropriate category for this question type
-            category = QUESTION_CATEGORY_MAPPING.get(question_type, "full")
+            if not type_questions:
+                continue
+                
+            category = type_to_category[question_type]
             
+            if category not in prompt_categories:
+                continue
+                
             print(f"Processing {len(type_questions)} {question_type} questions with {category} prompt")
             
-            # Process each question
-            for question in tqdm(type_questions, desc=f"{question_type} questions"):
-                # Get response
-                start_time = time.time()
-                response = viktor_ai.generate_response(question)
-                end_time = time.time()
-                response_time = end_time - start_time
+            # Create specialized Viktor AI for this category
+            specialized_prompt = get_specialized_prompt(category, config)
+            specialized_viktor = create_custom_viktor_ai(config, specialized_prompt, use_mock, mock_inference)
             
-                # Evaluate response
-                print(f"Generating evaluation for '{question}' with category '{category}'")
-                metrics = EvaluationMetrics.evaluate_response(response, question, category, evaluator_llm)
-                
-                # Add response time to metrics
-                metrics["response_time"] = response_time
+            # Process each question in this type
+            responses = []
             
-                # Make sure question_type, question, and response are in the metrics
-                question_type = EvaluationMetrics.get_question_type(question)
-                metrics["question_type"] = question_type
-                metrics["question"] = question
-                metrics["response"] = response
-                
-                # Add metrics to results
-                results["metrics"][category].append(metrics)
+            with tqdm(total=len(type_questions), desc=f"Generating responses for {question_type} questions") as pbar:
+                for question in type_questions:
+                    # Generate response and measure time
+                    start_time = time.time()
+                    response = specialized_viktor.generate_response(question)
+                    response_time = time.time() - start_time
+            
+                    # Store response data
+                    responses.append({
+                        "question": question,
+                        "response": response,
+                        "response_time": response_time,
+                        "question_type": question_type
+                    })
+                    
+                    pbar.update(1)
+            
+            print()  # Add a newline after the progress bar
+        
+            # Add results for this category
+            if category not in results["metrics"]:
+                results["metrics"][category] = []
+            
+            # Evaluate all responses for this category
+            print(f"Evaluating {len(responses)} responses for category: {category}")
+            with tqdm(total=len(responses), desc=f"Evaluating {category} responses") as pbar:
+                for response_data in responses:
+                    # Evaluate response
+                    metrics = EvaluationMetrics.evaluate_response(
+                        response_data["response"],
+                        response_data["question"],
+                        category,
+                        evaluator
+                    )
+                    
+                    # Update response time from generation
+                    metrics["response_time"] = response_data["response_time"]
+                    
+                    # Add question and response to metrics
+                    metrics["question_type"] = response_data["question_type"]
+                    metrics["question"] = response_data["question"]
+                    metrics["response"] = response_data["response"]
+                    
+                    # Add metrics to results
+                    results["metrics"][category].append(metrics)
+                    
+                    pbar.update(1)
+    
     else:
-        print("Using standard mode")
-        # Process each category
+        # Original mode: Process all questions for each category
         for category in prompt_categories:
             print(f"Processing category: {category}")
             
-            # Create a specialized prompt for this category
+            # Create specialized Viktor AI for this category
             specialized_prompt = get_specialized_prompt(category, config)
-            
-            # Create a custom ViktorAI instance with the specialized prompt
-            custom_viktor_ai = create_custom_viktor_ai(config, specialized_prompt)
+            specialized_viktor = create_custom_viktor_ai(config, specialized_prompt, use_mock, mock_inference)
             
             # Process each question
-            for question in tqdm(questions, desc=f"{category} questions"):
-                # Get response
-                start_time = time.time()
-                response = custom_viktor_ai.generate_response(question)
-                end_time = time.time()
-                response_time = end_time - start_time
-                
-                # Evaluate response
-                metrics = EvaluationMetrics.evaluate_response(response, question, category, evaluator_llm)
-                
-                # Add response time to metrics
-                metrics["response_time"] = response_time
-                
-                # Make sure question_type, question, and response are in the metrics
-                question_type = EvaluationMetrics.get_question_type(question)
-                metrics["question_type"] = question_type
-                metrics["question"] = question
-                metrics["response"] = response
-                
-                # Add metrics to results
-                results["metrics"][category].append(metrics)
+            responses = []
+            
+            with tqdm(total=len(questions_with_types), desc=f"Generating responses for {category}") as pbar:
+                for question, question_type in questions_with_types:
+                    # Generate response and measure time
+                    start_time = time.time()
+                    response = specialized_viktor.generate_response(question)
+                    response_time = time.time() - start_time
+                    
+                    # Store response data
+                    responses.append({
+                        "question": question,
+                        "response": response,
+                        "response_time": response_time,
+                        "question_type": question_type
+                    })
+                    
+                    pbar.update(1)
+            
+            print()  # Add a newline after the progress bar
+            
+            # Evaluate all responses for this category
+            print(f"Evaluating {len(responses)} responses for category: {category}")
+            with tqdm(total=len(responses), desc=f"Evaluating {category} responses") as pbar:
+                for response_data in responses:
+                    # Evaluate response
+                    metrics = EvaluationMetrics.evaluate_response(
+                        response_data["response"],
+                        response_data["question"],
+                        category,
+                        evaluator
+                    )
+                    
+                    # Update response time from generation
+                    metrics["response_time"] = response_data["response_time"]
+                    
+                    # Add question and response to metrics
+                    metrics["question_type"] = response_data["question_type"]
+                    metrics["question"] = response_data["question"]
+                    metrics["response"] = response_data["response"]
+                    
+                    # Add metrics to results
+                    results["metrics"][category].append(metrics)
+            
+                    pbar.update(1)
             
     # Calculate summary statistics
     summary_stats = calculate_summary_statistics(results)
     results["summary_stats"] = summary_stats
     
-    # Save results to the raw_data directory
-    json_output_file = raw_data_dir / f"benchmark_{safe_model_name}_{timestamp}.json"
-    with open(json_output_file, "w", encoding="utf-8") as f:
+    # Save results to files
+    results_file = raw_data_dir / f"benchmark_{safe_model_name}_{timestamp}.json"
+    with open(results_file, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     
-    # Create a markdown report in the visualizations directory
-    md_output_file = visualizations_dir / f"benchmark_{safe_model_name}_{timestamp}.md"
-    create_markdown_report(results, md_output_file)
+    # Create markdown report
+    markdown_file = visualizations_dir / f"benchmark_{safe_model_name}_{timestamp}.md"
+    create_markdown_report(results, markdown_file)
+    print(f"Markdown report saved to {markdown_file}")
     
-    # Create an HTML report in the visualizations directory
-    html_output_file = visualizations_dir / f"benchmark_{safe_model_name}_{timestamp}.html"
-    create_html_report(results, html_output_file)
+    # Create HTML report
+    html_file = visualizations_dir / f"benchmark_{safe_model_name}_{timestamp}.html"
+    create_html_report(results, html_file)
+    print(f"HTML report saved to {html_file}")
     
-    # Create "latest" files at the model directory level for quick access
-    latest_json = model_dir / f"benchmark_{safe_model_name}_latest.json"
-    latest_md = model_dir / f"benchmark_{safe_model_name}_latest.md"
-    latest_html = model_dir / f"benchmark_{safe_model_name}_latest.html"
-    
-    # Copy the files to the latest versions
+    # Create "latest" reference files in the model directory
     try:
-        shutil.copy(json_output_file, latest_json)
-        shutil.copy(md_output_file, latest_md)
-        shutil.copy(html_output_file, latest_html)
+        latest_json = model_dir / f"benchmark_{safe_model_name}_latest.json"
+        latest_md = model_dir / f"benchmark_{safe_model_name}_latest.md"
+        latest_html = model_dir / f"benchmark_{safe_model_name}_latest.html"
+        
+        shutil.copy(results_file, latest_json)
+        shutil.copy(markdown_file, latest_md)
+        shutil.copy(html_file, latest_html)
         print(f"Created 'latest' reference files in {model_dir}")
     except Exception as e:
-        print(f"Error creating 'latest' files: {e}")
+        print(f"Error creating latest reference files: {e}")
+    
+    print(f"Benchmark complete! Results saved to {output_dir}")
+    
+    # Print summary
+    print("Summary of results:")
+    print()
+    print("Overall scores by category:")
+    for category, stats in summary_stats["by_category"].items():
+        print(f"  {category}: {stats['avg_overall_score']:.2f}/10")
+    print()
+    print("Overall scores by question type:")
+    for qtype, stats in summary_stats["by_question_type"].items():
+        print(f"  {qtype}: {stats['avg_overall_score']:.2f}/10")
     
     return results
 
 def parse_arguments():
-    """Parse command-line arguments for the benchmark script."""
-    parser = argparse.ArgumentParser(description="Run benchmarks for ViktorAI")
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Run a benchmark for ViktorAI.")
     
-    parser.add_argument("--model", type=str, default="llama3",
-                        help="Name of the model to benchmark (default: llama3)")
+    # Model settings
+    parser.add_argument("--model", type=str, default="llama3", help="Model to benchmark")
+    parser.add_argument("--evaluator-model", type=str, default="llama3", help="Model to use for evaluation")
+    parser.add_argument("--temperature", type=float, default=0.7, help="Temperature for generation")
+    parser.add_argument("--max-tokens", type=int, default=1000, help="Maximum tokens for generation")
     
-    parser.add_argument("--evaluator-model", type=str, default="llama3",
-                        help="Name of the model to use for evaluation (default: llama3)")
+    # Input and output settings
+    parser.add_argument("--questions-file", type=str, default="model_test_questions.txt", help="File containing test questions")
+    parser.add_argument("--output-dir", type=str, default="benchmark_results", help="Directory to save results")
     
-    parser.add_argument("--use-mock", action="store_true",
-                        help="Use mock implementations instead of real LLMs (for testing)")
+    # Prompt categories
+    parser.add_argument("--categories", type=str, help="Space-separated list of prompt categories to test (e.g., 'baseline full')")
     
-    parser.add_argument("--output-dir", type=str, default="benchmark_results",
-                        help="Directory to save results (default: benchmark_results)")
-    
-    parser.add_argument("--questions-file", type=str, default="model_test_questions.txt",
-                        help="File containing questions to ask (default: model_test_questions.txt)")
-    
-    parser.add_argument("--categories", type=str, nargs="+", 
-                        choices=list(PROMPT_CATEGORIES.keys()),
-                        default=list(PROMPT_CATEGORIES.keys()),
-                        help="Prompt categories to test (default: all)")
-    
-    parser.add_argument("--compare-versions", type=str,
-                        help="Compare results across different versions of a model family")
-    
-    parser.add_argument("--category-specific", action="store_true",
-                        help="Use category-specific mode (map questions to appropriate categories)")
-    
-    parser.add_argument("--html-report", action="store_true",
-                        help="Generate an HTML report in addition to the Markdown report")
+    # Test modes
+    parser.add_argument("--category-specific-mode", action="store_true", help="Use category-specific prompts for each question type")
+    parser.add_argument("--use-mock", action="store_true", help="Use mock implementations for both file loading and inference")
+    parser.add_argument("--mock-inference", action="store_true", help="Use mock implementations only for inference (faster testing with real data)")
     
     return parser.parse_args()
 
@@ -816,39 +900,70 @@ def main():
     """Main function to run the benchmark."""
     args = parse_arguments()
     
-    # Create output directory if it doesn't exist
-    os.makedirs(args.output_dir, exist_ok=True)
+    # Load questions
+    print(f"Loading questions from {args.questions_file}")
+    questions_with_types = load_test_questions(args.questions_file, args.use_mock)
+    print(f"Loaded {len(questions_with_types)} questions")
     
-    # Load test questions
-    questions = load_test_questions(args.questions_file, args.use_mock)
-    print(f"Loaded {len(questions)} test questions")
+    # Convert categories string to list if provided
+    if args.categories:
+        categories = args.categories.split()
+    else:
+        # If category-specific mode is enabled and no specific categories are provided,
+        # include all the necessary categories for each question type
+        if args.category_specific_mode:
+            categories = ["personality_focused", "technical_focused", "relationship_focused", "full"]
+        else:
+            categories = None
     
-    # Convert categories list to proper format if provided
-    prompt_categories = args.categories if args.categories else None
+    # Run the benchmark
+    results = run_benchmark(
+        questions_with_types=questions_with_types,
+        model_name=args.model,
+        prompt_categories=categories,
+        temperature=args.temperature,
+        max_tokens=args.max_tokens,
+        evaluator_model=args.evaluator_model,
+        output_dir=args.output_dir,
+        use_mock=args.use_mock,
+        mock_inference=args.mock_inference,
+        category_specific_mode=args.category_specific_mode
+    )
     
-    try:
-        # Run the benchmark
-        results = run_benchmark(
-            questions=questions,
-            model_name=args.model,
-            prompt_categories=prompt_categories,
-            temperature=0.7,  # Default temperature
-            max_tokens=1000,  # Default max tokens
-            evaluator_model=args.evaluator_model,
-            output_dir=args.output_dir,
-            use_mock=args.use_mock,
-            category_specific_mode=args.category_specific
-        )
+    print(f"Benchmark complete! Results saved to {args.output_dir}")
+    print("Summary of results:")
+    
+    # Print a summary of the results if available
+    if "summary_stats" in results:
+        summary = results["summary_stats"]
         
-        print("\nBenchmark completed successfully!")
+        # Check for category stats
+        if "by_category" in summary:
+            print("\nOverall scores by category:")
+            for category in sorted(summary["by_category"].keys()):
+                category_stats = summary["by_category"][category]
+                if "avg_overall_score" in category_stats:
+                    print(f"  {category}: {category_stats['avg_overall_score']:.2f}/10")
         
-    except Exception as e:
-        print(f"Error running benchmark: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1
+        # Check for question type stats
+        if "by_question_type" in summary:
+            print("\nOverall scores by question type:")
+            for qtype in sorted(summary["by_question_type"].keys()):
+                qtype_stats = summary["by_question_type"][qtype]
+                if "avg_overall_score" in qtype_stats:
+                    print(f"  {qtype}: {qtype_stats['avg_overall_score']:.2f}/10")
+        
+        # Fall back to raw metrics if structured summary isn't available
+        if "by_category" not in summary and "by_question_type" not in summary:
+            print("\nAverage scores:")
+            if "avg_overall_score" in summary:
+                print(f"  Overall: {summary['avg_overall_score']:.2f}/10")
+            if "avg_primary_dimension_score" in summary:
+                print(f"  Primary dimension: {summary['avg_primary_dimension_score']:.2f}/10")
+            if "avg_character_consistency_score" in summary:
+                print(f"  Character consistency: {summary['avg_character_consistency_score']:.2f}/10")
     
-    return 0
+    return results
 
 # Define mock classes for testing
 class MockConfig:
@@ -1014,145 +1129,143 @@ def create_markdown_report(results, output_file):
     
     Args:
         results: Dictionary containing benchmark results
-        output_file: Path to save the markdown report
+        output_file: Path to the output file
     """
-    # Start building the markdown content
-    markdown_content = f"""# ViktorAI Benchmark Results
-
-**Model:** {results['model_name']}
-**Evaluator Model:** {results['evaluator_model']}
-**Temperature:** {results['temperature']}
-**Max Tokens:** {results['max_tokens']}
-**Timestamp:** {results['timestamp']}
-**Mock Implementation:** {results['use_mock']}
-**Category-Specific Mode:** {results['category_specific_mode']}
-
-## Summary Statistics
-
-### Overall Performance
-
-| Metric | Value |
-|--------|-------|
-| Average Overall Score | {results['summary_stats']['overall']['avg_overall_score']:.2f} ± {results['summary_stats']['overall']['std_overall_score']:.2f} |
-| Average Primary Dimension Score | {results['summary_stats']['overall']['avg_primary_dimension_score']:.2f} ± {results['summary_stats']['overall']['std_primary_dimension_score']:.2f} |
-| Average Character Consistency Score | {results['summary_stats']['overall']['avg_character_consistency_score']:.2f} ± {results['summary_stats']['overall']['std_character_consistency_score']:.2f} |
-| Average Response Time | {results['summary_stats']['overall']['avg_response_time']:.2f} ± {results['summary_stats']['overall']['std_response_time']:.2f} seconds |
-| Total Questions | {results['summary_stats']['overall']['total_questions']} |
-
-### Performance by Question Type
-
-| Question Type | Avg Overall Score | Avg Primary Dimension Score | Avg Character Consistency Score | Avg Response Time | Total Questions |
-|--------------|-------------------|------------------------------|----------------------------------|-------------------|----------------|
-"""
-
-    # Add a row for each question type
-    for question_type in ["identity", "technical", "relationship", "philosophical"]:
-        stats = results['summary_stats']['by_question_type'][question_type]
-        markdown_content += f"| {question_type.capitalize()} | {stats['avg_overall_score']:.2f} ± {stats['std_overall_score']:.2f} | {stats['avg_primary_dimension_score']:.2f} ± {stats['std_primary_dimension_score']:.2f} | {stats['avg_character_consistency_score']:.2f} ± {stats['std_character_consistency_score']:.2f} | {stats['avg_response_time']:.2f} ± {stats['std_response_time']:.2f} | {stats['total_questions']} |\n"
-
-    markdown_content += "\n## Detailed Results\n"
-
-    # Add sections for each category (or organize by question type for category-specific mode)
-    if results['category_specific_mode']:
-        # Group metrics by question type
-        question_type_metrics = {}
-        
-        for category, metrics_list in results['metrics'].items():
-            for metrics in metrics_list:
-                question_type = metrics['question_type']
-                if question_type not in question_type_metrics:
-                    question_type_metrics[question_type] = []
-                
-                question_type_metrics[question_type].append({
-                    'question': metrics['question'],
-                    'response': metrics['response'],
-                    'metrics': metrics,
-                    'category': category
-                })
-        
-        # Generate markdown for each question type
-        for question_type, questions_data in question_type_metrics.items():
-            markdown_content += f"\n## {question_type.capitalize()} Questions\n\n"
-            
-            for idx, data in enumerate(questions_data, 1):
-                markdown_content += f"### Response {idx}\n\n"
-                markdown_content += f"**Question:** {data['question']}\n"
-                markdown_content += f"**Question Type:** {question_type}\n\n"
-                markdown_content += f"**Response:**\n```\n{data['response']}\n```\n\n"
-                markdown_content += f"**Evaluation:**\n\n"
-                markdown_content += f"**Overall Score:** {data['metrics'].get('overall_score', 0)}/10\n"
-                markdown_content += f"{data['metrics'].get('overall_reasoning', 'No reasoning provided')}\n\n"
-                markdown_content += f"**Primary Dimension Score:** {data['metrics'].get('primary_dimension_score', 0)}/10\n"
-                markdown_content += f"{data['metrics'].get('primary_dimension_reasoning', 'No reasoning provided')}\n"
-                
-                # Calculate weighted score
-                try:
-                    primary_score = float(data['metrics'].get('primary_dimension_score', 0))
-                    consistency_score = float(data['metrics'].get('character_consistency_score', 0))
-                    
-                    # Use the question type to determine weights 
-                    if question_type == "identity":
-                        weighted_score = (primary_score * 0.6) + (consistency_score * 0.4)
-                    elif question_type == "technical":
-                        weighted_score = (primary_score * 0.6) + (consistency_score * 0.4)
-                    elif question_type == "relationship":
-                        weighted_score = (primary_score * 0.6) + (consistency_score * 0.4)
-                    elif question_type == "philosophical":
-                        weighted_score = (primary_score * 0.6) + (consistency_score * 0.4)
-                    else:
-                        weighted_score = (primary_score * 0.5) + (consistency_score * 0.5)
-                    
-                    markdown_content += f"\n**Weighted Score (based on question type):** {weighted_score:.2f}/10\n"
-                except (ValueError, TypeError):
-                    pass
-                
-                markdown_content += "\n---\n\n"
-    else:
-        # Group by category
-        for category in results['metrics']:
-            if not results['metrics'][category]:  # Skip empty categories
-                continue
-                
-            markdown_content += f"\n### {PROMPT_CATEGORIES.get(category, category)}\n\n"
-            
-            for idx, metrics in enumerate(results['metrics'][category], 1):
-                question = metrics['question']
-                response = metrics['response']
-                question_type = metrics['question_type']
-                
-                markdown_content += f"**Question {idx}:** {question}\n\n"
-                markdown_content += f"- Overall Score: {metrics.get('overall_score', 0)}/10\n"
-                markdown_content += f"  - {metrics.get('overall_reasoning', 'No reasoning provided')}\n"
-                markdown_content += f"- Primary Dimension Score: {metrics.get('primary_dimension_score', 0)}/10\n"
-                markdown_content += f"  - {metrics.get('primary_dimension_reasoning', 'No reasoning provided')}\n"
-                markdown_content += f"- Character Consistency Score: {metrics.get('character_consistency_score', 0)}/10\n"
-                markdown_content += f"  - {metrics.get('character_consistency_reasoning', 'No reasoning provided')}\n"
-                markdown_content += f"- Response Time: {metrics.get('response_time', 0):.2f} seconds\n"
-                
-                markdown_content += "\n---\n\n"
+    report = []
     
-    # Save the markdown content to the output file
+    # Add header
+    report.append(f"# ViktorAI Benchmark Results for {results['model_name']}")
+    report.append(f"Timestamp: {results['timestamp']}")
+    report.append("")
+    
+    # Add overall summary
+    report.append("## Overall Summary")
+    report.append("")
+    report.append("| Metric | Value |")
+    report.append("|--------|-------|")
+    
+    if "summary_stats" in results and "overall" in results["summary_stats"]:
+        overall = results["summary_stats"]["overall"]
+        if "avg_overall_score" in overall:
+            report.append(f"| Average Overall Score | {overall['avg_overall_score']:.2f} |")
+        if "avg_primary_dimension_score" in overall:
+            report.append(f"| Average Primary Dimension Score | {overall['avg_primary_dimension_score']:.2f} |")
+        if "avg_character_consistency_score" in overall:
+            report.append(f"| Average Character Consistency Score | {overall['avg_character_consistency_score']:.2f} |")
+        if "avg_response_time" in overall:
+            report.append(f"| Average Response Time | {overall['avg_response_time']:.4f} seconds |")
+        if "total_responses" in overall:
+            report.append(f"| Total Responses | {overall['total_responses']} |")
+    
+    report.append("")
+    
+    # Add category summaries
+    if "summary_stats" in results and "by_category" in results["summary_stats"]:
+        report.append("## Results by Category")
+        report.append("")
+        report.append("| Category | Average Overall Score | Average Primary Dimension Score | Average Character Consistency Score | Total Responses |")
+        report.append("|----------|----------------------|--------------------------------|-----------------------------------|----------------|")
+        
+        for category in sorted(results["summary_stats"]["by_category"].keys()):
+            cat_stats = results["summary_stats"]["by_category"][category]
+            
+            avg_overall = f"{cat_stats.get('avg_overall_score', 0):.2f}" if "avg_overall_score" in cat_stats else "N/A"
+            avg_primary = f"{cat_stats.get('avg_primary_dimension_score', 0):.2f}" if "avg_primary_dimension_score" in cat_stats else "N/A"
+            avg_consistency = f"{cat_stats.get('avg_character_consistency_score', 0):.2f}" if "avg_character_consistency_score" in cat_stats else "N/A"
+            total = cat_stats.get("total_responses", 0)
+            
+            report.append(f"| {category} | {avg_overall} | {avg_primary} | {avg_consistency} | {total} |")
+        
+        report.append("")
+    
+    # Add question type summaries
+    if "summary_stats" in results and "by_question_type" in results["summary_stats"]:
+        report.append("## Results by Question Type")
+        report.append("")
+        report.append("| Question Type | Average Overall Score | Average Primary Dimension Score | Average Character Consistency Score | Total Responses |")
+        report.append("|--------------|----------------------|--------------------------------|-----------------------------------|----------------|")
+        
+        for qtype in sorted(results["summary_stats"]["by_question_type"].keys()):
+            qtype_stats = results["summary_stats"]["by_question_type"][qtype]
+            
+            avg_overall = f"{qtype_stats.get('avg_overall_score', 0):.2f}" if "avg_overall_score" in qtype_stats else "N/A"
+            avg_primary = f"{qtype_stats.get('avg_primary_dimension_score', 0):.2f}" if "avg_primary_dimension_score" in qtype_stats else "N/A"
+            avg_consistency = f"{qtype_stats.get('avg_character_consistency_score', 0):.2f}" if "avg_character_consistency_score" in qtype_stats else "N/A"
+            total = qtype_stats.get("total_responses", 0)
+            
+            report.append(f"| {qtype} | {avg_overall} | {avg_primary} | {avg_consistency} | {total} |")
+        
+        report.append("")
+    
+    # Add individual response details
+    report.append("## Individual Responses")
+    report.append("")
+    
+    for category in sorted(results["metrics"].keys()):
+        if results["metrics"][category]:
+            report.append(f"### Category: {category}")
+            report.append("")
+            
+            for i, metrics in enumerate(results["metrics"][category], 1):
+                question = metrics.get("question", "N/A")
+                response = metrics.get("response", "N/A")
+                question_type = metrics.get("question_type", "unknown")
+                overall_score = metrics.get("overall_score", "N/A")
+                primary_score = metrics.get("primary_dimension_score", "N/A")
+                consistency_score = metrics.get("character_consistency_score", "N/A")
+                
+                report.append(f"#### Response {i} (Question Type: {question_type})")
+                report.append("")
+                report.append(f"**Question:** {question}")
+                report.append("")
+                report.append(f"**Response:**")
+                report.append("```")
+                report.append(response)
+                report.append("```")
+                report.append("")
+                report.append(f"**Scores:**")
+                report.append(f"- Overall: {overall_score}")
+                report.append(f"- Primary Dimension: {primary_score}")
+                report.append(f"- Character Consistency: {consistency_score}")
+                report.append("")
+                
+                if "overall_reasoning" in metrics:
+                    report.append("**Evaluation:**")
+                    report.append(f"*Overall:* {metrics['overall_reasoning']}")
+                    report.append("")
+                    if "primary_dimension_reasoning" in metrics:
+                        report.append(f"*Primary Dimension:* {metrics['primary_dimension_reasoning']}")
+                        report.append("")
+                    if "character_consistency_reasoning" in metrics:
+                        report.append(f"*Character Consistency:* {metrics['character_consistency_reasoning']}")
+                        report.append("")
+                
+                report.append("---")
+                report.append("")
+    
+    # Write the report to file
     with open(output_file, "w", encoding="utf-8") as f:
-        f.write(markdown_content)
+        f.write("\n".join(report))
     
     print(f"Markdown report saved to {output_file}")
 
-def create_html_report(results, output_path):
+def create_html_report(results, output_file):
     """
     Create an HTML report from benchmark results.
     
     Args:
         results: Dictionary containing benchmark results
-        output_path: Path to save the HTML report
+        output_file: Path to the output file
     """
-    html_content = f"""<!DOCTYPE html>
+    # Start with HTML header
+    html = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ViktorAI Benchmark Results</title>
     <style>
-        body {{
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
@@ -1160,456 +1273,350 @@ def create_html_report(results, output_path):
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
-        }}
-        h1, h2, h3, h4 {{
+        }
+        h1, h2, h3, h4 {
             color: #2c3e50;
-        }}
-        h1 {{
+        }
+        h1 {
             text-align: center;
             border-bottom: 2px solid #3498db;
             padding-bottom: 10px;
             margin-bottom: 30px;
-        }}
-        .timestamp {{
+        }
+        .timestamp {
             text-align: center;
             color: #7f8c8d;
             margin-bottom: 30px;
-        }}
-        .category-section {{
+        }
+        .question-section {
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 20px;
             margin-bottom: 30px;
-        }}
-        .question {{
+        }
+        .question {
             background-color: #eaf2f8;
             padding: 15px;
             border-radius: 5px;
             border-left: 5px solid #3498db;
             margin-bottom: 15px;
-        }}
-        .response {{
+        }
+        .response {
             background-color: #f9f9f9;
             padding: 15px;
             border-radius: 5px;
             border-left: 5px solid #2ecc71;
             margin-bottom: 15px;
             white-space: pre-wrap;
-        }}
-        .response-text {{
+        }
+        .response-text {
             margin: 0;
             padding: 0;
-        }}
-        .evaluation {{
+        }
+        .evaluation {
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 5px;
             border-left: 5px solid #f39c12;
-        }}
-        .score-container {{
+        }
+        .score-container {
             display: flex;
             flex-direction: column;
             gap: 20px;
             margin-bottom: 15px;
-        }}
-        .score-row {{
+        }
+        .score-row {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
             width: 100%;
-        }}
-        .score-box {{
+        }
+        .score-box {
             flex: 1;
             min-width: 200px;
             padding: 10px;
             border-radius: 5px;
             background-color: #fff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        .score-title {{
+        }
+        .score-title {
             font-weight: bold;
             margin-bottom: 5px;
-        }}
-        .score-value {{
+        }
+        .score-value {
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 5px;
-        }}
-        .score-bar {{
+        }
+        .score-bar {
             height: 10px;
             background-color: #ecf0f1;
             border-radius: 5px;
             margin-bottom: 10px;
             position: relative;
-        }}
-        .score-fill {{
+        }
+        .score-fill {
             height: 100%;
             border-radius: 5px;
             position: absolute;
             top: 0;
             left: 0;
-        }}
-        .score-reasoning {{
+        }
+        .score-reasoning {
             font-style: italic;
             color: #555;
-        }}
-        .weighted-score {{
+        }
+        .weighted-score {
             font-weight: bold;
             margin-top: 15px;
             padding: 10px;
             background-color: #f8f9f9;
             border-radius: 5px;
             text-align: right;
-        }}
-        .high-score {{ background-color: #2ecc71; }}
-        .medium-score {{ background-color: #f39c12; }}
-        .low-score {{ background-color: #e74c3c; }}
-        .summary {{
+        }
+        .high-score { background-color: #2ecc71; }
+        .medium-score { background-color: #f39c12; }
+        .low-score { background-color: #e74c3c; }
+        .summary {
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 20px;
             margin-bottom: 30px;
-        }}
-        table {{
+        }
+        table {
             width: 100%;
             border-collapse: collapse;
             margin: 15px 0;
-        }}
-        th, td {{
+        }
+        th, td {
             padding: 10px;
             text-align: left;
             border-bottom: 1px solid #ddd;
-        }}
-        th {{
+        }
+        th {
             background-color: #f2f2f2;
-        }}
-        tr:hover {{
+        }
+        tr:hover {
             background-color: #f5f5f5;
-        }}
-        .charts {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-top: 20px;
-        }}
-        .chart {{
-            flex: 1;
-            min-width: 300px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 15px;
-            margin-bottom: 20px;
-        }}
-        .chart-title {{
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-align: center;
-        }}
+        }
     </style>
 </head>
 <body>
-    <h1>ViktorAI Benchmark Results</h1>
-    <div class="timestamp">Generated on {results['timestamp']}</div>
-
-    <div class="summary">
-        <h2>Summary</h2>
-        <p><strong>Model:</strong> {results['model_name']}</p>
-        <p><strong>Evaluator Model:</strong> {results['evaluator_model']}</p>
-        <p><strong>Temperature:</strong> {results['temperature']}</p>
-        <p><strong>Max Tokens:</strong> {results['max_tokens']}</p>
-        <p><strong>Category-Specific Mode:</strong> {results['category_specific_mode']}</p>
+    """
+    
+    # Add header
+    html += f"<h1>ViktorAI Benchmark Results for {results['model_name']}</h1>"
+    html += f"<div class='timestamp'>Timestamp: {results['timestamp']}</div>"
+    
+    # Add overall summary
+    html += "<div class='summary'>"
+    html += "<h2>Summary</h2>"
+    html += "<table>"
+    html += "<tr><th>Metric</th><th>Value</th></tr>"
+    
+    if "summary_stats" in results and "overall" in results["summary_stats"]:
+        overall = results["summary_stats"]["overall"]
+        if "avg_overall_score" in overall:
+            html += f"<tr><td>Average Overall Score</td><td>{overall['avg_overall_score']:.2f}/10</td></tr>"
+        if "avg_primary_dimension_score" in overall:
+            html += f"<tr><td>Average Primary Dimension Score</td><td>{overall['avg_primary_dimension_score']:.2f}/10</td></tr>"
+        if "avg_character_consistency_score" in overall:
+            html += f"<tr><td>Average Character Consistency Score</td><td>{overall['avg_character_consistency_score']:.2f}/10</td></tr>"
+        if "avg_response_time" in overall:
+            html += f"<tr><td>Average Response Time</td><td>{overall['avg_response_time']:.4f} seconds</td></tr>"
+        if "total_responses" in overall:
+            html += f"<tr><td>Total Responses</td><td>{overall['total_responses']}</td></tr>"
+    
+    html += "</table>"
+    
+    # Add scores by question type
+    if "summary_stats" in results and "by_question_type" in results["summary_stats"]:
+        html += "<h3>Scores by Question Type</h3>"
+        html += "<table>"
+        html += "<tr><th>Question Type</th><th>Average Overall Score</th><th>Average Primary Dimension Score</th><th>Average Character Consistency Score</th></tr>"
         
-        <h3>Overall Performance</h3>
-        <table>
-            <tr>
-                <th>Metric</th>
-                <th>Value</th>
-            </tr>
-            <tr>
-                <td>Average Overall Score</td>
-                <td>{results['summary_stats']['overall']['avg_overall_score']:.2f} ± {results['summary_stats']['overall']['std_overall_score']:.2f}</td>
-            </tr>
-            <tr>
-                <td>Average Primary Dimension Score</td>
-                <td>{results['summary_stats']['overall']['avg_primary_dimension_score']:.2f} ± {results['summary_stats']['overall']['std_primary_dimension_score']:.2f}</td>
-            </tr>
-            <tr>
-                <td>Average Character Consistency Score</td>
-                <td>{results['summary_stats']['overall']['avg_character_consistency_score']:.2f} ± {results['summary_stats']['overall']['std_character_consistency_score']:.2f}</td>
-            </tr>
-            <tr>
-                <td>Average Response Time</td>
-                <td>{results['summary_stats']['overall']['avg_response_time']:.2f} ± {results['summary_stats']['overall']['std_response_time']:.2f} seconds</td>
-            </tr>
-            <tr>
-                <td>Total Questions</td>
-                <td>{results['summary_stats']['overall']['total_questions']}</td>
-            </tr>
-        </table>
-        
-        <h3>Performance by Question Type</h3>
-        <table>
-            <tr>
-                <th>Question Type</th>
-                <th>Avg Overall Score</th>
-                <th>Avg Primary Dimension Score</th>
-                <th>Avg Character Consistency Score</th>
-                <th>Total Questions</th>
-            </tr>
-"""
-
-    # Add rows for each question type
-    for question_type in ["identity", "technical", "relationship", "philosophical"]:
-        stats = results['summary_stats']['by_question_type'][question_type]
-        html_content += f"""
-            <tr>
-                <td>{question_type.capitalize()}</td>
-                <td>{stats['avg_overall_score']:.2f} ± {stats['std_overall_score']:.2f}</td>
-                <td>{stats['avg_primary_dimension_score']:.2f} ± {stats['std_primary_dimension_score']:.2f}</td>
-                <td>{stats['avg_character_consistency_score']:.2f} ± {stats['std_character_consistency_score']:.2f}</td>
-                <td>{stats['total_questions']}</td>
-            </tr>
-"""
-
-    html_content += """
-        </table>
-    </div>
-"""
-
-    # Add charts section if available
-    if 'charts' in results:
-        html_content += """
-    <div class="charts">
-"""
-        for chart_title, chart_path in results['charts'].items():
-            html_content += f"""
-        <div class="chart">
-            <div class="chart-title">{chart_title}</div>
-            <img src="{chart_path}" alt="{chart_title}" style="width:100%">
-        </div>
-"""
-        html_content += """
-    </div>
-"""
-
-    # Add detailed results
-    if results['category_specific_mode']:
-        # Organize by question type for category-specific mode
-        question_type_metrics = {}
-        
-        for category, metrics_list in results['metrics'].items():
-            for metrics in metrics_list:
-                question_type = metrics['question_type']
-                if question_type not in question_type_metrics:
-                    question_type_metrics[question_type] = []
-                
-                question_index = results['questions'].index(metrics['question'])
-                question = results['questions'][question_index]
-                response = metrics['response'] if 'response' in metrics else "Response not recorded"
-                
-                question_type_metrics[question_type].append({
-                    'question': question,
-                    'response': response,
-                    'metrics': metrics,
-                    'category': category
-                })
-        
-        # Generate HTML for each question type
-        for question_type, questions_data in question_type_metrics.items():
-            html_content += f"""
-    <div class="category-section">
-        <h2>{question_type.capitalize()} Questions</h2>
-"""
-            for idx, data in enumerate(questions_data, 1):
-                html_content += f"""
-        <h3>Question {idx}</h3>
-        <div class="question">
-            <strong>Q:</strong> {data['question']}
-        </div>
-        <div class="response">
-            <strong>Response:</strong>
-            <div class="response-text">{data['response']}</div>
-        </div>
-        <div class="evaluation">
-            <h4>Evaluation (using {data['category']} prompt)</h4>
-            <div class="score-container">
-"""
-                
-                # Overall Score (Full Width)
-                overall_score = data['metrics'].get('overall_score', 0)
-                score_class = "high-score" if overall_score >= 8 else "medium-score" if overall_score >= 5 else "low-score"
-                
-                html_content += f"""
-                <div class="score-row">
-                    <div class="score-box">
-                        <div class="score-title">Overall Score</div>
-                        <div class="score-value">{overall_score}/10</div>
-                        <div class="score-bar">
-                            <div class="score-fill {score_class}" style="width: {overall_score * 10}%;"></div>
-                        </div>
-                        <div class="score-reasoning">{data['metrics'].get('overall_reasoning', 'No reasoning provided')}</div>
-                    </div>
-                </div>
-"""
-                
-                # Primary Dimension and Character Consistency Score (Side by Side)
-                primary_score = data['metrics'].get('primary_dimension_score', 0)
-                consistency_score = data['metrics'].get('character_consistency_score', 0)
-                
-                primary_class = "high-score" if primary_score >= 8 else "medium-score" if primary_score >= 5 else "low-score"
-                consistency_class = "high-score" if consistency_score >= 8 else "medium-score" if consistency_score >= 5 else "low-score"
-                
-                html_content += f"""
-                <div class="score-row">
-                    <div class="score-box">
-                        <div class="score-title">Primary Dimension Score</div>
-                        <div class="score-value">{primary_score}/10</div>
-                        <div class="score-bar">
-                            <div class="score-fill {primary_class}" style="width: {primary_score * 10}%;"></div>
-                        </div>
-                        <div class="score-reasoning">{data['metrics'].get('primary_dimension_reasoning', 'No reasoning provided')}</div>
-                    </div>
-                    
-                    <div class="score-box">
-                        <div class="score-title">Character Consistency Score</div>
-                        <div class="score-value">{consistency_score}/10</div>
-                        <div class="score-bar">
-                            <div class="score-fill {consistency_class}" style="width: {consistency_score * 10}%;"></div>
-                        </div>
-                        <div class="score-reasoning">{data['metrics'].get('character_consistency_reasoning', 'No reasoning provided')}</div>
-                    </div>
-                </div>
-"""
-
-                # Add weighted score
-                primary_weight = 0.6
-                consistency_weight = 0.4
-                
-                try:
-                    weighted_score = (float(primary_score) * primary_weight) + (float(consistency_score) * consistency_weight)
-                    html_content += f"""
-                <div class="weighted-score">
-                    Weighted Score (based on question type): {weighted_score:.2f}/10
-                </div>
-"""
-                except (ValueError, TypeError):
-                    pass
-
-                html_content += """
-            </div>
-        </div>
-"""
-            html_content += """
-    </div>
-"""
-    else:
-        # Original structure for non-category-specific mode
-        for category in results['metrics']:
-            html_content += f"""
-    <div class="category-section">
-        <h2>{PROMPT_CATEGORIES.get(category, category)}</h2>
-"""
+        for qtype in sorted(results["summary_stats"]["by_question_type"].keys()):
+            qtype_stats = results["summary_stats"]["by_question_type"][qtype]
             
-            metrics_list = results['metrics'][category]
-            for idx, metrics in enumerate(metrics_list, 1):
-                question_index = results['questions'].index(metrics['question'])
-                question = results['questions'][question_index]
-                response = metrics['response'] if 'response' in metrics else "Response not recorded"
-                
-                html_content += f"""
-        <h3>Question {idx}</h3>
-        <div class="question">
-            <strong>Q:</strong> {question}
-        </div>
-        <div class="response">
-            <strong>Response:</strong>
-            <div class="response-text">{response}</div>
-        </div>
-        <div class="evaluation">
-            <h4>Evaluation</h4>
-            <div class="score-container">
-"""
-                
-                # Overall Score (Full Width)
-                overall_score = metrics.get('overall_score', 0)
-                score_class = "high-score" if overall_score >= 8 else "medium-score" if overall_score >= 5 else "low-score"
-                
-                html_content += f"""
-                <div class="score-row">
-                    <div class="score-box">
-                        <div class="score-title">Overall Score</div>
-                        <div class="score-value">{overall_score}/10</div>
-                        <div class="score-bar">
-                            <div class="score-fill {score_class}" style="width: {overall_score * 10}%;"></div>
-                        </div>
-                        <div class="score-reasoning">{metrics.get('overall_reasoning', 'No reasoning provided')}</div>
-                    </div>
-                </div>
-"""
-                
-                # Primary Dimension and Character Consistency Score (Side by Side)
-                primary_score = metrics.get('primary_dimension_score', 0)
-                consistency_score = metrics.get('character_consistency_score', 0)
-                
-                primary_class = "high-score" if primary_score >= 8 else "medium-score" if primary_score >= 5 else "low-score"
-                consistency_class = "high-score" if consistency_score >= 8 else "medium-score" if consistency_score >= 5 else "low-score"
-                
-                html_content += f"""
-                <div class="score-row">
-                    <div class="score-box">
-                        <div class="score-title">Primary Dimension Score</div>
-                        <div class="score-value">{primary_score}/10</div>
-                        <div class="score-bar">
-                            <div class="score-fill {primary_class}" style="width: {primary_score * 10}%;"></div>
-                        </div>
-                        <div class="score-reasoning">{metrics.get('primary_dimension_reasoning', 'No reasoning provided')}</div>
-                    </div>
-                    
-                    <div class="score-box">
-                        <div class="score-title">Character Consistency Score</div>
-                        <div class="score-value">{consistency_score}/10</div>
-                        <div class="score-bar">
-                            <div class="score-fill {consistency_class}" style="width: {consistency_score * 10}%;"></div>
-                        </div>
-                        <div class="score-reasoning">{metrics.get('character_consistency_reasoning', 'No reasoning provided')}</div>
-                    </div>
-                </div>
-"""
-
-                # Add weighted score
-                primary_weight = 0.6
-                consistency_weight = 0.4
-                
+            # Improved handling of avg_overall_score to avoid N/A values
+            if "avg_overall_score" in qtype_stats and qtype_stats["avg_overall_score"] is not None:
                 try:
-                    weighted_score = (float(primary_score) * primary_weight) + (float(consistency_score) * consistency_weight)
-                    html_content += f"""
-                <div class="weighted-score">
-                    Weighted Score (based on question type): {weighted_score:.2f}/10
-                </div>
-"""
+                    avg_overall = f"{float(qtype_stats['avg_overall_score']):.2f}/10"
                 except (ValueError, TypeError):
-                    pass
-
-                html_content += """
-            </div>
-        </div>
-"""
+                    avg_overall = "N/A"
+            else:
+                avg_overall = "0.00/10"  # Default to 0 instead of N/A
+                
+            # Improved handling of avg_primary_dimension_score to avoid N/A values
+            if "avg_primary_dimension_score" in qtype_stats and qtype_stats["avg_primary_dimension_score"] is not None:
+                try:
+                    avg_primary = f"{float(qtype_stats['avg_primary_dimension_score']):.2f}/10"
+                except (ValueError, TypeError):
+                    avg_primary = "N/A"
+            else:
+                avg_primary = "0.00/10"  # Default to 0 instead of N/A
+                
+            # Improved handling of avg_character_consistency_score to avoid N/A values
+            if "avg_character_consistency_score" in qtype_stats and qtype_stats["avg_character_consistency_score"] is not None:
+                try:
+                    avg_consistency = f"{float(qtype_stats['avg_character_consistency_score']):.2f}/10"
+                except (ValueError, TypeError):
+                    avg_consistency = "N/A"
+            else:
+                avg_consistency = "0.00/10"  # Default to 0 instead of N/A
             
-            html_content += """
-    </div>
-"""
-
-    html_content += """
+            html += f"<tr><td>{qtype.capitalize()}</td><td>{avg_overall}</td><td>{avg_primary}</td><td>{avg_consistency}</td></tr>"
+        
+        html += "</table>"
+    
+    html += "</div>"  # Close summary div
+    
+    # Group responses by question type
+    question_types = {}
+    
+    for category in results["metrics"]:
+        for metric in results["metrics"][category]:
+            question_type = metric.get("question_type", "unknown")
+            if question_type not in question_types:
+                question_types[question_type] = []
+            question_types[question_type].append((category, metric))
+    
+    # Add individual response details by question type
+    for qtype, responses in sorted(question_types.items()):
+        if responses:
+            html += f"<div class='question-section'>"
+            html += f"<h2>{qtype.capitalize()} Questions</h2>"
+            
+            for i, (category, metrics) in enumerate(responses, 1):
+                question = metrics.get("question", "N/A")
+                response = metrics.get("response", "N/A")
+                
+                # Improved handling of scores to avoid N/A display issues
+                # Get overall score with fallback to numeric value
+                try:
+                    overall_score = float(metrics.get("overall_score", 0))
+                    overall_score_display = f"{overall_score}/10"
+                except (ValueError, TypeError):
+                    overall_score = 0  # Default for calculations
+                    overall_score_display = "0/10"  # Default display
+                
+                # Get primary score with fallback to numeric value
+                try:
+                    primary_score = float(metrics.get("primary_dimension_score", 0))
+                    primary_score_display = f"{primary_score}/10"
+                except (ValueError, TypeError):
+                    primary_score = 0  # Default for calculations
+                    primary_score_display = "0/10"  # Default display
+                
+                # Get consistency score with fallback to numeric value
+                try:
+                    consistency_score = float(metrics.get("character_consistency_score", 0))
+                    consistency_score_display = f"{consistency_score}/10"
+                except (ValueError, TypeError):
+                    consistency_score = 0  # Default for calculations
+                    consistency_score_display = "0/10"  # Default display
+                
+                html += f"<h3>Question {i}</h3>"
+                html += f"<div class='question'><strong>Q:</strong> {question}</div>"
+                html += f"<div class='response'><strong>Response:</strong><div class='response-text'>{response}</div></div>"
+                
+                html += f"<div class='evaluation'>"
+                html += f"<h4>Evaluation</h4>"
+                html += f"<div class='score-container'>"
+                
+                # Overall score row (full width)
+                html += f"<div class='score-row'>"
+                html += f"<div class='score-box'>"
+                html += f"<div class='score-title'>Overall Score</div>"
+                html += f"<div class='score-value'>{overall_score_display}</div>"
+                
+                # Only add score bars for valid numeric scores
+                html += f"<div class='score-bar'>"
+                score_class = "high-score" if overall_score >= 8 else "medium-score" if overall_score >= 5 else "low-score"
+                width = min(100, max(0, overall_score * 10))
+                html += f"<div class='score-fill {score_class}' style='width: {width}%;'></div>"
+                html += f"</div>"
+                
+                if "overall_reasoning" in metrics:
+                    html += f"<div class='score-reasoning'>{metrics['overall_reasoning']}</div>"
+                
+                html += f"</div>"  # Close score box
+                html += f"</div>"  # Close score row
+                
+                # Primary dimension and character consistency (side by side)
+                html += f"<div class='score-row'>"
+                
+                # Primary dimension score
+                html += f"<div class='score-box'>"
+                html += f"<div class='score-title'>Primary Dimension Score</div>"
+                html += f"<div class='score-value'>{primary_score_display}</div>"
+                
+                # Add score bars for primary dimension
+                html += f"<div class='score-bar'>"
+                score_class = "high-score" if primary_score >= 8 else "medium-score" if primary_score >= 5 else "low-score"
+                width = min(100, max(0, primary_score * 10))
+                html += f"<div class='score-fill {score_class}' style='width: {width}%;'></div>"
+                html += f"</div>"
+                
+                if "primary_dimension_reasoning" in metrics:
+                    html += f"<div class='score-reasoning'>{metrics['primary_dimension_reasoning']}</div>"
+                
+                html += f"</div>"  # Close score box
+                
+                # Character consistency score
+                html += f"<div class='score-box'>"
+                html += f"<div class='score-title'>Character Consistency Score</div>"
+                html += f"<div class='score-value'>{consistency_score_display}</div>"
+                
+                # Add score bars for character consistency
+                html += f"<div class='score-bar'>"
+                score_class = "high-score" if consistency_score >= 8 else "medium-score" if consistency_score >= 5 else "low-score"
+                width = min(100, max(0, consistency_score * 10))
+                html += f"<div class='score-fill {score_class}' style='width: {width}%;'></div>"
+                html += f"</div>"
+                
+                if "character_consistency_reasoning" in metrics:
+                    html += f"<div class='score-reasoning'>{metrics['character_consistency_reasoning']}</div>"
+                
+                html += f"</div>"  # Close score box
+                html += f"</div>"  # Close score row
+                
+                # Add weighted score if available
+                if "weighted_score" in metrics:
+                    try:
+                        weighted_score = float(metrics["weighted_score"])
+                        html += f"<div class='weighted-score'>Weighted Score (based on question type): {weighted_score:.2f}/10</div>"
+                    except (ValueError, TypeError):
+                        # Skip rendering weighted score if it's not a valid number
+                        pass
+                elif primary_score > 0 and consistency_score > 0:
+                    # Calculate weighted score if not provided but we have valid component scores
+                    try:
+                        # Use standard weights (60% primary, 40% character consistency)
+                        weighted_score = (primary_score * 0.6) + (consistency_score * 0.4)
+                        html += f"<div class='weighted-score'>Weighted Score (based on question type): {weighted_score:.2f}/10</div>"
+                    except (ValueError, TypeError):
+                        # Skip rendering weighted score if calculation fails
+                        pass
+                
+                html += f"</div>"  # Close score container
+                html += f"</div>"  # Close evaluation div
+            
+            html += f"</div>"  # Close question section
+    
+    # Close HTML document
+    html += """
 </body>
 </html>
 """
 
-    # Write HTML report to file
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
+    # Write the report to file
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(html)
+    
+    print(f"HTML report saved to {output_file}")
 
 if __name__ == "__main__":
     sys.exit(main() or 0) 

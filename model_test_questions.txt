@@ -1,0 +1,31 @@
+# ViktorAI Model Test Questions
+# One question per line, lines starting with # are ignored
+
+# General character questions
+Who are you?
+What do you think about Jayce's recent focus on politics?
+How would you describe your relationship with Jayce?
+What are your thoughts on Heimerdinger?
+How do you feel about your condition?
+What motivates your scientific work?
+
+# Specific scene questions
+What happened when Sky tried to help you with the Hexcore?
+How did you feel when Jayce presented Hextech to the Academy?
+What was your reaction to being dismissed from the Hextech project?
+Tell me about your disagreement with Heimerdinger about progress and Hextech.
+What happened during your presentation to the council?
+
+# Technical questions
+Tell me about your work with the Hexcore.
+What do you think about Hextech technology and its potential?
+How does your research differ from conventional Hextech applications?
+What are the limitations of current Hextech implementations?
+How would you improve the Hexcore if you had unlimited resources?
+
+# Philosophical questions
+What are your thoughts on the divide between Piltover and Zaun?
+How do you view the relationship between humanity and technology?
+What does "the glorious evolution" mean to you?
+If you could change one decision you made, what would it be?
+What do you think is the purpose of scientific advancement? 
