@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.config import Config
 from src.response_classifier import ResponseClassifier, train_model
-from src.generate_classifier_data import main as generate_data
+from scripts.generate_classifier_data import main as generate_data
 
 
 def main():

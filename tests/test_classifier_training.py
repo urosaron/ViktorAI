@@ -21,7 +21,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import the training modules
 from src.config import Config
 from src.response_classifier import ResponseClassifier, train_model
-from src.generate_classifier_data import generate_negative_examples, save_training_data
+from scripts.generate_classifier_data import (
+    generate_negative_examples,
+    save_training_data,
+)
 
 # Mock the training script's main function to avoid setup requirements
 from scripts.train_classifier import main as train_main

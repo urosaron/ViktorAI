@@ -178,7 +178,7 @@ ViktorAI now includes a PyTorch-based response quality classifier to evaluate an
 1. Generate training data:
 
    ```bash
-   python -m src.generate_classifier_data
+   python -m scripts.generate_classifier_data
    ```
 
 2. Train the classifier:
