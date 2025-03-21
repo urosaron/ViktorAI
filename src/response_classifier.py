@@ -5,12 +5,10 @@ This module implements a PyTorch-based classifier to evaluate whether
 responses accurately reflect Viktor's character from Arcane.
 """
 
-import os
-import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from pathlib import Path
 
 
@@ -116,7 +114,7 @@ class ResponseClassifier:
         ]
 
         # Create a simple feature vector based on term presence
-        text = (prompt + " " + response).lower()
+        text = f"{prompt} {response}".lower()
 
         # Count occurrences of character terms
         term_counts = [text.count(term) for term in character_terms]

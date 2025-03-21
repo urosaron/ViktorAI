@@ -6,8 +6,7 @@ loading character data, generating prompts, and handling conversations.
 """
 
 import os
-from typing import Dict, List, Optional, Tuple, Any
-from pathlib import Path
+from typing import List
 
 from src.character_data_loader import CharacterDataLoader
 from src.llm_interface import OllamaInterface
@@ -80,10 +79,7 @@ class ViktorAI:
         # Get the combined character data
         character_data = self.data_loader.get_combined_character_data()
 
-        # Combine them into a system prompt
-        system_prompt = f"{main_prompt}\n\n{character_data}"
-
-        return system_prompt
+        return f"{main_prompt}\n\n{character_data}"
 
     def generate_response(self, user_input: str) -> str:
         """Generate a response to user input.
@@ -145,7 +141,7 @@ class ViktorAI:
             if self.config.debug:
                 print(f"Response attempt {attempts} didn't meet quality thresholds.")
                 print(f"Scores: {evaluation}")
-                print(f"Trying again...")
+                print("Trying again...")
 
             # If we've reached the maximum number of attempts, use the best response
             if attempts >= max_attempts:
@@ -218,8 +214,7 @@ class ViktorAI:
         if not context:
             return user_input
 
-        # Create a prompt that includes the retrieved context
-        prompt = f"""I need to respond to the user as Viktor from Arcane Season 1.
+        return f"""I need to respond to the user as Viktor from Arcane Season 1.
 
 {context}
 
@@ -228,8 +223,6 @@ Based on the information above and my character knowledge, I should respond to:
 User: {user_input}
 
 Remember to maintain Viktor's voice, personality, and knowledge boundaries. Only reference events that happened in Season 1. Do not make up events that didn't happen in the show."""
-
-        return prompt
 
     # Legacy methods for backward compatibility
 
@@ -265,11 +258,7 @@ Remember to maintain Viktor's voice, personality, and knowledge boundaries. Only
 
         # Check if any of the keywords are in the user input
         user_input_lower = user_input.lower()
-        for keyword in scene_keywords:
-            if keyword.lower() in user_input_lower:
-                return True
-
-        return False
+        return any(keyword.lower() in user_input_lower for keyword in scene_keywords)
 
     def _get_relevant_scene_info(self, user_input: str) -> str:
         """Get relevant scene information from the character analysis.

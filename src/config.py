@@ -5,10 +5,9 @@ This module contains the configuration settings for the ViktorAI chatbot,
 including model settings and file paths.
 """
 
-import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 @dataclass
