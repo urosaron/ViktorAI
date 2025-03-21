@@ -207,3 +207,26 @@ The classifier uses a simple feed-forward neural network with two output heads:
 2. **Response Quality**: Evaluates the overall coherence and relevance of the response
 
 When enabled, ViktorAI will regenerate responses that score below the minimum threshold, ensuring better quality interactions.
+
+### Testing
+
+To run the classifier tests:
+
+```bash
+# Test the core classifier functionality
+python -m tests.test_response_classifier
+
+# Test the training pipeline
+python -m tests.test_classifier_training
+
+# Run all tests
+python -m unittest discover tests
+```
+
+The tests validate:
+
+- Feature extraction from text
+- Model initialization and architecture
+- Training process and effectiveness
+- Model saving and loading
+- Response evaluation accuracy
