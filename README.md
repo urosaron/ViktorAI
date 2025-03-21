@@ -5,6 +5,7 @@ A Python-based chatbot that embodies Viktor from Arcane Season 1. This project e
 ## Project Overview
 
 ViktorAI is a character AI project that:
+
 - Loads detailed character data from markdown files
 - Uses Retrieval-Augmented Generation (RAG) for accurate, in-character responses
 - Interfaces with Ollama LLMs to generate responses in Viktor's voice
@@ -47,28 +48,33 @@ ViktorAI/
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/urosaron/ViktorAI.git
    cd ViktorAI
    ```
 
 2. Create and activate a virtual environment (recommended):
+
    ```bash
    python3 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Install the required dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. Build the vector store for RAG capabilities:
+
    ```bash
    python build_vector_store.py
    ```
 
 5. Ensure Ollama is installed and running:
+
    ```bash
    # Check if Ollama is running
    curl http://localhost:11434/api/version
@@ -122,6 +128,7 @@ python -m unittest discover tests
 ```
 
 This command runs all test files in the `tests` directory. The tests verify that:
+
 - Character data loads correctly
 - The RAG system retrieves relevant information
 - The chatbot generates appropriate responses
@@ -129,6 +136,7 @@ This command runs all test files in the `tests` directory. The tests verify that
 ## Knowledge Boundaries
 
 Viktor's knowledge is limited to events of Arcane Season 1. He:
+
 - Has knowledge of the entire Season 1
 - Cannot know future events beyond Season 1
 - Maintains character consistency with Viktor's portrayal in the show
@@ -145,10 +153,57 @@ Viktor's knowledge is limited to events of Arcane Season 1. He:
 ## Documentation
 
 For detailed documentation about how the system works, including:
+
 - Comprehensive explanation of the RAG system
 - Data flow and architecture
 - Code structure and components
 - Advanced usage and customization
 - Model testing and evaluation
 
-Please refer to the [everything.md](everything.md) file. 
+Please refer to the [everything.md](everything.md) file.
+
+## Response Quality Classifier
+
+ViktorAI now includes a PyTorch-based response quality classifier to evaluate and ensure high-quality, in-character responses:
+
+### Features
+
+- Uses a neural network to evaluate both character accuracy and response quality
+- Automatically rejects and regenerates low-quality responses
+- Improves character consistency across different LLM models
+- Provides scoring metrics for responses
+
+### Setup and Training
+
+1. Generate training data:
+
+   ```bash
+   python -m src.generate_classifier_data
+   ```
+
+2. Train the classifier:
+
+   ```bash
+   python train_classifier.py
+   ```
+
+3. Use the classifier with ViktorAI:
+   ```bash
+   python main.py --use-classifier
+   ```
+
+### Command-Line Arguments
+
+- `--use-classifier`: Enable the PyTorch response classifier
+- `--no-classifier`: Disable the classifier even if available
+- `--min-score`: Set minimum acceptable score (0.0-1.0, default: 0.6)
+- `--debug`: Show detailed scoring information
+
+### How It Works
+
+The classifier uses a simple feed-forward neural network with two output heads:
+
+1. **Character Accuracy**: Evaluates how well the response matches Viktor's character
+2. **Response Quality**: Evaluates the overall coherence and relevance of the response
+
+When enabled, ViktorAI will regenerate responses that score below the minimum threshold, ensuring better quality interactions.
