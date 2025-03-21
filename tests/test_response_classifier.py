@@ -103,7 +103,7 @@ class TestResponseClassifier(unittest.TestCase):
         self.assertEqual(features.dim(), 1)  # Should be a 1D tensor
 
         # Character-specific terms should be detected
-        text = f"{prompt} {response}".lower()
+        text = (prompt + " " + response).lower()
         self.assertIn("hexcore", text)
 
         # Test with irrelevant content

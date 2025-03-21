@@ -189,7 +189,7 @@ def generate_negative_examples(
     Returns:
         List of negative training examples.
     """
-    if len(training_data) < 5:
+    if len(training_data) < 2:  # Changed from 5 to 2
         print("Not enough training data to generate negative examples.")
         return []
 

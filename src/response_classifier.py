@@ -48,6 +48,9 @@ class ResponseClassifier:
         else:
             print("No pre-trained model found. Initializing new model.")
 
+        # Set the model to evaluation mode by default
+        model.eval()
+
         return model
 
     def evaluate_response(self, prompt: str, response: str) -> Dict[str, float]:
