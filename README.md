@@ -184,7 +184,7 @@ ViktorAI now includes a PyTorch-based response quality classifier to evaluate an
 2. Train the classifier:
 
    ```bash
-   python train_classifier.py
+   python scripts/train_classifier.py
    ```
 
 3. Use the classifier with ViktorAI:
