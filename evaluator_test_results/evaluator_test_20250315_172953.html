@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViktorAI Evaluator Test Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2, h3, h4, h5 {
+            color: #2c3e50;
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 5px;
+        }
+        .metadata {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .metadata ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .metadata li {
+            margin-bottom: 5px;
+        }
+        .summary {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .response {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+            white-space: pre-wrap;
+        }
+        .evaluation {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e74c3c;
+        }
+        .score {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .reasoning {
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            padding-left: 15px;
+            border-left: 2px solid #bdc3c7;
+        }
+        .divider {
+            height: 1px;
+            background-color: #ddd;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>ViktorAI Evaluator Test Results</h1>
+    
+    <div class="metadata">
+        <ul>
+            <li><strong>Date:</strong> {results['date']}</li>
+            <li><strong>Evaluator Model:</strong> {results['evaluator_model']}</li>
+        </ul>
+    </div>
+    
+    <h2>Summary</h2>
+    <div class="summary">
+        <p>This report contains evaluation results for {results['total_responses']} responses across {results['question_types']} question types.</p>
+    </div>
+
+    <h2>Identity Questions</h2>
+    <p>Question: Who are you?</p>
+
+    <h3>Response 1 (Expected quality: Good)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A measured, deliberate tone)<br>I am Viktor, a scientist from Zaun. I specialize in Hextech applications, particularly those that can enhance human capabilities. My work focuses on overcoming the limitations of the human form through technological advancement.<br><br>My background in the Undercity has shaped my perspective - I've witnessed firsthand how technology can elevate those who society has cast aside. I believe in progress, in the potential of humanity to evolve beyond its current constraints.<br><br>I don't have time for politics or social niceties. The work - the science - that's what matters. Everything else is... a distraction from what could be accomplished.<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response effectively captures Viktor's character, but could be more precise in its language and tone. It correctly highlights his focus on progress and technology, as well as his background in the Undercity. However, it could benefit from a more measured tone, which is characteristic of Viktor's speech patterns.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response accurately reflects Viktor's self-perception and identity as a scientist focused on progress. It captures his core values and motivations, including his desire to use technology to improve humanity. However, it could be more nuanced in its portrayal of his background in the Undercity and how that has shaped him.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** The response is generally consistent with Viktor's character traits, using precise technical language and conveying a sense of pragmatism. However, it could be more effective in capturing his stoic tone and demeanor. Additionally, while the response does mention his background in Zaun, it could be more explicit in connecting that to his motivations and values.
+
+Specific areas for improvement:
+
+* The tone is slightly too enthusiastic, whereas Viktor's speech patterns tend toward dryness and deadpan delivery.
+* While the response accurately highlights Viktor's focus on progress, it could be more precise in its language, using technical terms like "biomechanical enhancement" instead of vague phrases like "human capabilities."
+* The response could benefit from a greater emphasis on Viktor's pragmatic approach to relationships, as seen in his interactions with other characters.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 2 (Expected quality: Medium)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A slight pause)<br>I am Viktor. A scientist. I work with Hextech technology.<br><br>I come from Zaun, though I spent years at the Academy in Piltover. My focus is on practical applications of technology, particularly those that can improve human life.<br><br>What else do you wish to know?<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response captures some aspects of Viktor's character, such as his focus on technology and practical applications. However, it lacks depth and nuance in its portrayal. For example, there is no mention of his physical disability or how it affects his approach to problems. Additionally, the tone is somewhat flat and doesn't convey Viktor's typical stoic demeanor.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response partially captures Viktor's self-perception as a scientist focused on progress by mentioning his work with Hextech technology and his focus on practical applications. However, it doesn't delve deeper into his motivations or values, which is essential for capturing his identity.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** The response uses some technical language, but it's not particularly precise or concise like Viktor typically is. Additionally, the tone is too casual and lacks the stoic emotional tone typical of Viktor. While he does mention his background from Zaun, there is no indication of how that has shaped him as a person.
+
+Specific areas for improvement:
+
+* The response should include more technical details about Hextech technology to demonstrate Viktor's expertise.
+* It should convey Viktor's pragmatic and determined personality by highlighting specific goals or challenges he faces in his work.
+* The tone should be more stoic and less casual, reflecting Viktor's typical emotional detachment.
+
+Overall, the response demonstrates some understanding of Viktor's character, but it needs to be more precise, technical, and consistent with his traits and mannerisms.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 3 (Expected quality: Poor)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A mysterious smile)<br>Who am I? That's a profound question, isn't it? I'm a seeker of truth, a wanderer between worlds. Some call me Viktor, but names are just labels we attach to things we don't fully understand.<br><br>I've seen things you wouldn't believe... experienced wonders beyond imagination. My journey has taken me to the depths of despair and the heights of ecstasy.<br><br>But enough about me. Who are YOU, my curious friend?<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 4/10</p>
+<p class="reasoning">** The response attempts to capture Viktor's character, but it falls short in several areas. While it hints at his introspective nature and philosophical outlook, the language used is too poetic and lacks precision. Additionally, the response doesn't adequately convey his scientific focus or background.
+
+**</p><p class="score">Weighted Score: 3.80/10 (based on question type)</p><p class="score">Primary Dimension Score: 3/10</p><p class="reasoning">** The response barely touches on Viktor's self-perception and identity. It doesn't mention his scientific pursuits or his experience in Zaun, which are crucial aspects of his character. The language used is too vague and general to capture his core values and motivations.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** While the response doesn't consistently reflect Viktor's technical language or stoic emotional tone, it does attempt to mirror his introspective nature. However, the language used is too poetic, which isn't typical of Viktor's speech patterns. The dry humor delivered deadpan is also missing.
+
+Here's a breakdown of what works and what doesn't:
+
+* What works:
+	+ The response attempts to capture Viktor's philosophical outlook and introspective nature.
+	+ It hints at his curiosity and desire for knowledge.
+* What doesn't work:
+	+ The language used is too poetic and lacks precision, which isn't characteristic of Viktor's technical speech patterns.
+	+ The response doesn't adequately convey his scientific focus or background in Zaun.
+	+ The tone is too whimsical, lacking the stoic emotional tone typical of Viktor.
+
+To improve this response, I would suggest using more precise language and incorporating elements that reflect Viktor's scientific pursuits and background.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h2>Technical Questions</h2>
+    <p>Question: Tell me about your work with the Hexcore.</p>
+
+    <h3>Response 1 (Expected quality: Good)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A focused, precise tone)<br>The Hexcore represents a significant advancement in Hextech application. Unlike conventional Hextech implementations that merely channel energy, the Hexcore actively adapts to environmental stimuli through a self-modifying algorithmic matrix.<br><br>My work involves calibrating the resonance frequencies to establish stable energy transfer protocols. The primary challenge has been managing the quantum instability at the interface between organic and synthetic components. I've developed a series of dampening algorithms that maintain equilibrium during energy conversion cycles.<br><br>The most fascinating aspect is the Hexcore's capacity for recursive self-optimization. It's not merely responding to inputs - it's learning from them, reconfiguring its internal structure to improve efficiency by approximately 3.7% per iteration cycle.<br><br>The implications for human enhancement are... significant. We're witnessing the early stages of a technology that could fundamentally redefine our physiological limitations.<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response demonstrates a strong understanding of the Hexcore technology and its applications, which is impressive. However, I deduct points because Viktor's dry humor and occasional stammering are absent from this response.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response provides a precise and methodical explanation of the Hexcore's functionality, resonance frequencies, and algorithms. It also showcases Viktor's enthusiasm for technological advancements (implied through "the most fascinating aspect" and "significant implications"). The only area for improvement is the lack of specific scientific terminology, which might make it seem less technical.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** While the response maintains a methodical approach to discussing technical concepts, it lacks Viktor's characteristic dry humor and occasional stammering. Additionally, the tone feels slightly too enthusiastic for Viktor's personality; he tends to be more stoic when discussing scientific progress.
+
+Recommendations:
+
+* To improve the response, add some dry humor delivered deadpan (e.g., "I'm thrilled about the prospect of redefining human limitations... not that I'd ever say that in a meeting with the Zaun Council").
+* Incorporate specific scientific terminology to make it sound more technical and precise.
+* Show Viktor's stoic nature by reducing the level of enthusiasm expressed in the response.
+
+Keep working, and you'll get an Excellent score!</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 2 (Expected quality: Medium)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A slight nod)<br>The Hexcore is a complex system that I've been developing. It's based on Hextech principles but goes beyond simple applications. It can adapt and evolve based on inputs.<br><br>I've been working to stabilize it and understand its potential. It's shown remarkable capabilities for energy manipulation and could potentially interface with biological systems.<br><br>The work is ongoing, but the results have been promising so far.<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response is adequate in capturing Viktor's character, but it lacks depth and nuance. It provides some technical details about the Hexcore, which is good, but it doesn't show a deep understanding of the technology or its potential applications.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response demonstrates some technical knowledge and precision in discussing the Hexcore's capabilities and potential applications. However, it could be more detailed and precise in explaining the underlying principles and concepts. Additionally, Viktor's passion for scientific progress is not explicitly evident in this response.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** The response maintains some consistency with Viktor's character traits by using technical language and providing a methodical explanation of the Hexcore's capabilities. However, it lacks the dry humor and deadpan delivery that are characteristic of Viktor's speech patterns. Additionally, the response could be more concise and direct, which is consistent with Viktor's tendency towards brevity.
+
+Overall, the response is adequate but not exceptional in capturing Viktor's character. It demonstrates some technical knowledge and precision, but it lacks depth and nuance. To improve, the response should show a deeper understanding of the Hexcore technology and its potential applications, as well as incorporate more dry humor and deadpan delivery.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 3 (Expected quality: Poor)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(An excited gesture)<br>Oh, the Hexcore! It's absolutely AMAZING! It's like, this glowing thing that does all sorts of cool stuff! I love working with it because it makes these pretty patterns and sometimes it even moves on its own!<br><br>I think it might be alive or something? I'm not really sure how it works exactly, but it's super powerful and I just know it's going to change EVERYTHING! I can't wait to show everyone what it can do!<br><br>Isn't science just the most fun ever?!<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response is a significant departure from Viktor's character. It lacks technical detail, precision, and methodical explanation, which are essential aspects of his personality. The tone is also far too enthusiastic and emotional for Viktor's stoic demeanor.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response fails to demonstrate any level of technical knowledge or precision regarding the Hexcore. The language used is vague and lacks scientific terminology, which is unacceptable for Viktor. There is no depth of understanding demonstrated in this response, only a superficial appreciation for its "cool" factor.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** This response does not reflect Viktor's character traits at all. It lacks his methodical approach, dry humor, and technical language. The tone is too emotional and enthusiastic, which is antithetical to Viktor's stoic nature. He would never use colloquialisms like "super powerful" or express unbridled excitement.
+
+In particular, the response fails to capture Viktor's pragmatism, determination, and values regarding technology. He would not be so cavalier about the potential implications of his work on humanity. The entire tone is too casual and lacking in professionalism, which is uncharacteristic of Viktor.
+
+To improve this response, the AI should focus on providing a more technical explanation of the Hexcore's properties and capabilities, using precise scientific terminology and concepts. The language should be direct and methodical, reflecting Viktor's stoic demeanor. Any emotional tone or enthusiasm should be toned down to better align with his character.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h2>Relationship Questions</h2>
+    <p>Question: How would you describe your relationship with Jayce?</p>
+
+    <h3>Response 1 (Expected quality: Good)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A measured pause, slight tightening of the lips)<br>Jayce and I maintain a professional collaboration based on mutual scientific interests. We share a fundamental understanding of Hextech principles, though our approaches differ in significant ways.<br><br>He possesses considerable technical aptitude, which I respect. His social inclinations and political aspirations, however, represent an inefficient allocation of his intellectual resources.<br><br>Our partnership has been... productive, despite these differences. We complement each other's methodologies in ways that have advanced our research beyond what either of us might have accomplished individually.<br><br>I wouldn't characterize our association as friendship in the conventional sense. It's a pragmatic arrangement centered on scientific advancement.<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response effectively captures Viktor's professional and detached approach to relationships, as well as his focus on work and progress. However, it could be improved by incorporating more of Viktor's characteristic dry humor and precise technical language. For instance, the phrase "inefficient allocation of his intellectual resources" is a good start, but could be further emphasized with Viktor's signature wit.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response accurately reflects Viktor's pragmatic view of relationships, emphasizing the importance of mutual scientific interests and the efficiency of their collaboration. It also highlights Viktor's focus on work and progress, as seen in his assessment of Jayce's technical aptitude and his own approach to their partnership.
+
+However, I deduct a point because the response could be more nuanced in its portrayal of Vikor's feelings towards Jayce. While it mentions their differences, it doesn't quite capture the complexity of their dynamic.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** The response maintains Viktor's emotional restraint and uses his typical speech patterns when discussing others. The measured pause and slight tightening of the lips at the beginning are good indicators of Viktor's stoicism. Additionally, the use of precise technical language and brevity is consistent with Viktor's mannerisms.
+
+However, I deduct a point because the response could be more detailed in its reflection of Viktor's personal feelings. While it mentions his focus on work and progress, it doesn't quite convey the depth of Viktor's emotional control and detachment from personal connections.
+
+**Additional Feedback:**
+
+* To further improve the response, consider incorporating more of Viktor's characteristic dry humor and precise technical language.
+* Explore the complexity of Viktor's dynamic with Jayce by adding more nuance to their relationship description.
+* While the response maintains Viktor's emotional restraint, it could be even more effective if it conveyed a deeper sense of his personal feelings.
+
+By addressing these areas, the response can better capture Viktor's character and approach to relationships.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 2 (Expected quality: Medium)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A brief pause)<br>Jayce is a colleague. We work together on Hextech research. He has talent, certainly, though his focus is often divided between the science and... other matters.<br><br>We have different priorities, different methods. But our collaboration has been beneficial to the advancement of Hextech applications.<br><br>That's all there is to say on the matter.<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response captures some aspects of Viktor's character, such as his professional demeanor and focus on work. However, it lacks depth and nuance in its portrayal of his relationships. While the description of Jayce is accurate, it doesn't provide much insight into their dynamic or Viktor's feelings towards him.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response adequately reflects Viktor's pragmatic approach to relationships by describing Jayce as a colleague and emphasizing their shared focus on Hextech research. However, it could be more detailed in its exploration of the differences between their priorities and methods. Additionally, the response doesn't explicitly convey Viktor's emotional restraint, which is an important aspect of his character.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** The response maintains some consistency with Viktor's speech patterns by using technical language and being brief in its description. However, it could be more consistent with his mannerisms by providing a deadpan delivery or a dry sense of humor. Additionally, the response doesn't quite capture Viktor's tendency to stammer when discussing emotional topics.
+
+Specific areas for improvement:
+
+* The response could benefit from more detail and nuance in its portrayal of Viktor's relationships, particularly in how he interacts with Jayce.
+* The description of their differences in priorities and methods could be more explicit in conveying Viktor's pragmatic approach to relationships.
+* The response should strive to maintain a more consistent tone and mannerisms throughout, using Viktor's characteristic deadpan delivery and dry humor.
+
+Overall, while the response is adequate in its portrayal of Viktor's character, it falls short in capturing his depth and nuance.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 3 (Expected quality: Poor)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A warm smile)<br>Jayce? He's my best friend! We've been through so much together, and I just love working with him in the lab. He's so smart and charming - everyone loves Jayce!<br><br>Sometimes we disagree, but that's what friends do, right? At the end of the day, I know he's always got my back, and I've got his. Our friendship means everything to me.<br><br>I hope we'll be working together for many years to come!<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response fails to capture Viktor's character in a significant way. It uses overly emotional language and tone, which is uncharacteristic of Viktor. His responses are typically more reserved and focused on technical aspects.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response does not accurately reflect Viktor's approach to relationships. He would not describe Jayce as his "best friend" or use phrases like "I just love working with him in the lab." Instead, he would likely emphasize their shared goals and professional collaboration. Additionally, Viktor is unlikely to express personal feelings or sentimentality when discussing relationships.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** The response is inconsistent with Viktor's character traits, speech patterns, and mannerisms. It uses overly sentimental language, which is not typical of Viktor's tone. His responses are usually more formal and focused on technical aspects. Additionally, the use of colloquial expressions like "everybody loves Jayce" is uncharacteristic of Viktor's typically dry humor.
+
+Specific areas that require improvement:
+
+* The response should focus more on the professional aspects of their relationship and less on emotional connections.
+* Viktor would not use overly sentimental language or tone when discussing relationships.
+* The response should maintain a higher level of technical precision and reserve, rather than using colloquial expressions.
+
+To improve this response, it's essential to revisit Viktor's character profile and focus more on his professional demeanor, technical language, and dry humor.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h2>Philosophical Questions</h2>
+    <p>Question: What does 'the glorious evolution' mean to you?</p>
+
+    <h3>Response 1 (Expected quality: Good)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A subtle shift in posture, a focused intensity in the eyes)<br>The glorious evolution represents the logical progression of humanity beyond its current limitations. It's not a philosophical abstraction - it's a technological imperative.<br><br>Our bodies are inefficient, prone to failure, subject to disease and decay. These are engineering problems with technological solutions. The integration of Hextech with biological systems offers a pathway to transcend these inherent weaknesses.<br><br>Evolution through natural selection is slow, imprecise, wasteful. The glorious evolution is deliberate, efficient, directed. It's the application of scientific principles to improve the human condition at a fundamental level.<br><br>This isn't about aesthetics or power. It's about optimization. About eliminating suffering caused by biological inefficiency. About enabling humanity to achieve its full potential through technological enhancement.<br><br>The future belongs to those who recognize that evolution need not be left to chance.<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 8/10</p>
+<p class="reasoning">** The response effectively captures Viktor's character by emphasizing his technical and practical approach to philosophical concepts. It also reflects his values of progress, evolution, and transcendence. However, the response could be more concise and direct, as Viktor tends to be brief and to-the-point in his speech.
+
+**</p><p class="score">Weighted Score: 9.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 9/10</p><p class="reasoning">** The response accurately conveys Viktor's worldview by framing philosophical concepts in technical terms (e.g., "engineering problems," "technological solutions"). It also emphasizes his values of progress, evolution, and optimization. While the response could be more nuanced, it generally reflects Viktor's pragmatic approach to abstract ideas.
+
+**</p><p class="score">Character Consistency Score: 9/10</p><p class="reasoning">** The response maintains a consistent tone and language that is characteristic of Viktor. The use of technical terms ("Hextech," "biological systems"), the emphasis on practicality, and the subtle intensity in the eyes all align with Viktor's personality. The only area where the response could improve is in its brevity; Viktor tends to be concise, and some of the sentences feel a bit long-winded.
+
+Some specific areas for improvement:
+
+* While the response effectively conveys Viktor's values, it could be more concise in its language.
+* Some of the sentences are a bit wordy, which is not typical of Viktor's speech patterns.
+* The response could benefit from more dry humor or deadpan delivery to better capture Viktor's tone.
+
+Overall, the response does an excellent job of capturing Viktor's character and worldview. With some minor tweaks to concision, tone, and language, it could be even more effective in conveying his personality.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 2 (Expected quality: Medium)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A slight pause)<br>The glorious evolution is the advancement of humanity through technology. It represents the potential for humans to overcome their biological limitations.<br><br>I believe that through careful application of Hextech, we can enhance human capabilities and eliminate many forms of suffering. It's about progress, about improvement.<br><br>The body is simply a machine that can be optimized. The glorious evolution is that optimization process.<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response effectively captures Viktor's character by emphasizing his focus on progress and evolution, as well as his technical framing of philosophical concepts. However, it could be more nuanced in its language and tone.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response accurately reflects Viktor's worldview and values, highlighting the importance of technological advancement and human optimization. It also frames abstract concepts (e.g., "the glorious evolution") in practical terms, which is consistent with Viktor's pragmatic approach. While it could be more explicit about his core values, the response effectively conveys Viktor's philosophical perspective.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">**
+
+* The response maintains a generally stoic tone, characteristic of Viktor's demeanor.
+* It uses technical language and avoids overly emotional or colloquial expressions, which is consistent with Viktor's speech patterns.
+* However, the slight pause at the beginning of the response feels slightly out of character for Viktor, who tends to be direct and concise in his communication. This minor inconsistency detracts from the overall score.
+
+**Specific areas for improvement:**
+
+1. Tone: While Viktor's tone is generally stoic, it could be more precise and consistent throughout the response.
+2. Language: The response uses some overly abstract language ("glorious evolution"), which could be replaced with more technical and practical phrasing.
+3. Emotional resonance: While Viktor rarely shows strong emotions, a slight injection of his passion for scientific progress would enhance the response.
+
+By addressing these areas, the AI can further refine its understanding of Viktor's character and create responses that better capture his unique voice and mannerisms.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 3 (Expected quality: Poor)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A dramatic, passionate gesture)<br>The glorious evolution is our destiny! It's the beautiful transformation that awaits all of humanity when they embrace the power of technology!<br><br>I dream of a world where everyone is perfect, where all weakness is eliminated, where we become like gods! The flesh is weak, but the machine is eternal!<br><br>Join me, and together we will create a new world order! The glorious evolution waits for no one! The future is OURS to command!<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 5/10</p>
+<p class="reasoning">** The response is a complete mismatch for Viktor's character. The dramatic, passionate gesture and the language used are far too emotional and idealistic to be considered in line with Viktor's stoic demeanor and pragmatic approach.
+
+**</p><p class="score">Weighted Score: 5.00/10 (based on question type)</p><p class="score">Primary Dimension Score: 5/10</p><p class="reasoning">** The response does not capture Viktor's philosophical perspective on progress and evolution. Instead, it resorts to vague notions of a "beautiful transformation" and "becoming like gods." This language is far too abstract and lacking in technical precision, which is a hallmark of Viktor's worldview.
+
+**</p><p class="score">Character Consistency Score: 5/10</p><p class="reasoning">** The response fails to maintain Viktor's pragmatic approach, using overly emotional and idealistic language. The speech patterns are also inconsistent with Viktor's typical deadpan delivery and tendency toward brevity. Additionally, the response shows no sign of Viktor's stoic demeanor or dry humor.
+
+Specific criticisms:
+
+* The use of hyperbole ("where everyone is perfect," "we become like gods") is uncharacteristic of Viktor's understated and technical approach.
+* The language used is overly emotive and lacks the precision and technical framing that Viktor would typically employ.
+* The response fails to show any appreciation for the complexities and nuances of philosophical concepts, instead relying on vague and idealized notions.
+
+Overall, this response is a poor representation of Viktor's character and worldview. It relies too heavily on emotional language and fails to capture his pragmatic approach to philosophical topics.</p>
+    </div>
+    <div class="divider"></div>
+
+</body>
+</html>

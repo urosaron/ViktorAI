@@ -20,7 +20,7 @@ class Config:
     max_tokens: int = 500
     
     # File paths
-    character_data_dir: Path = Path("character_data")
+    character_data_dir: Path = None  # We'll set this in __post_init__
     
     # Character data files
     core_profile_file: str = "viktor_core_profile.md"
@@ -34,6 +34,22 @@ class Config:
     
     def __post_init__(self):
         """Validate configuration after initialization."""
+        # Set character_data_dir if not already set
+        if self.character_data_dir is None:
+            # Try to find character_data directory in current or parent directory
+            current_dir_path = Path("character_data")
+            parent_dir_path = Path("..") / "character_data"
+            project_root_path = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) / "character_data"
+            
+            if current_dir_path.exists():
+                self.character_data_dir = current_dir_path
+            elif parent_dir_path.exists():
+                self.character_data_dir = parent_dir_path
+            elif project_root_path.exists():
+                self.character_data_dir = project_root_path
+            else:
+                raise FileNotFoundError(f"Character data directory not found in either {current_dir_path}, {parent_dir_path}, or {project_root_path}")
+        
         # Ensure character_data_dir is a Path object
         if isinstance(self.character_data_dir, str):
             self.character_data_dir = Path(self.character_data_dir)

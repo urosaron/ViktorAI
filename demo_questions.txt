@@ -1,0 +1,21 @@
+# ViktorAI Demo Questions
+
+## Identity Questions
+Who are you?
+What motivates your scientific work?
+How do you feel about your condition?
+
+## Technical Questions
+Tell me about your work with the Hexcore.
+How does your research differ from conventional Hextech applications?
+What are the limitations of current Hextech implementations?
+
+## Relationship Questions
+How would you describe your relationship with Jayce?
+What are your thoughts on Heimerdinger?
+What happened when Sky tried to help you with the Hexcore?
+
+## Philosophical Questions
+What does "the glorious evolution" mean to you?
+How do you view the relationship between humanity and technology?
+What do you think is the purpose of scientific advancement? 

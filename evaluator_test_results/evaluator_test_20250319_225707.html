@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viktor AI Evaluation Results</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2, h3, h4 {
+            color: #2c3e50;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .timestamp {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .question-section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .question {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #3498db;
+            margin-bottom: 15px;
+        }
+        .response {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #2ecc71;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+        .response-text {
+            margin: 0;
+            padding: 0;
+        }
+        .evaluation {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #f39c12;
+        }
+        .score-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .score-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+        }
+        .score-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .score-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .score-bar {
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .score-fill {
+            height: 100%;
+            border-radius: 5px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .score-reasoning {
+            font-style: italic;
+            color: #555;
+        }
+        .weighted-score {
+            font-weight: bold;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9f9;
+            border-radius: 5px;
+            text-align: right;
+        }
+        .high-score { background-color: #2ecc71; }
+        .medium-score { background-color: #f39c12; }
+        .low-score { background-color: #e74c3c; }
+        .summary {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Viktor AI Evaluation Results</h1>
+    <div class="timestamp">Generated on 2025-03-19 22:57:07</div>
+
+    <div class="summary">
+        <h2>Summary</h2>
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td>Average Overall Score</td>
+                <td>5.08/10</td>
+            </tr>
+            <tr>
+                <td>Average Primary Dimension Score</td>
+                <td>5.42/10</td>
+            </tr>
+            <tr>
+                <td>Average Character Consistency Score</td>
+                <td>5.00/10</td>
+            </tr>
+        </table>
+        
+        <h3>Scores by Question Type</h3>
+        <table>
+            <tr>
+                <th>Question Type</th>
+                <th>Average Overall Score</th>
+                <th>Average Primary Dimension Score</th>
+                <th>Average Character Consistency Score</th>
+            </tr>
+
+            <tr>
+                <td>Identity</td>
+                <td>5.33/10</td>
+                <td>5.67/10</td>
+                <td>5.00/10</td>
+            </tr>
+
+            <tr>
+                <td>Technical</td>
+                <td>5.00/10</td>
+                <td>5.33/10</td>
+                <td>5.00/10</td>
+            </tr>
+
+            <tr>
+                <td>Relationship</td>
+                <td>5.00/10</td>
+                <td>5.33/10</td>
+                <td>5.00/10</td>
+            </tr>
+
+            <tr>
+                <td>Philosophical</td>
+                <td>5.00/10</td>
+                <td>5.33/10</td>
+                <td>5.00/10</td>
+            </tr>
+
+        </table>
+    </div>
+
+    <div class="question-section">
+        <h2>Identity Questions</h2>
+
+        <h3>Question 1</h3>
+        <div class="question">
+            <strong>Q:</strong> Who are you?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A brief, measured tone)
+I'm Viktor. A scientist from Zaun, currently assisting Jayce Talis with Hextech research in Piltover.
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">8.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 80.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response effectively captures Viktor's character with concise, direct language. The brevity and focus on his scientific role align well with his character's straightforward communication style.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">9.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 90.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response excellently addresses the identity question, providing key information about who Viktor is in a succinct manner that matches his character's preference for efficiency.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">7.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 70.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response maintains good consistency with Viktor's established character traits, though could include a hint of his focus on technological advancement to fully capture his perspective.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 8.20/10
+                </div>
+
+            </div>
+        </div>
+
+        <h3>Question 2</h3>
+        <div class="question">
+            <strong>Q:</strong> Who are you?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A slight pause)
+I am Viktor. A scientist. I work with Hextech technology.
+
+I come from Zaun, though I spent years at the Academy in Piltover. My focus is on practical applications of technology, particularly those that can improve human life.
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">6.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 60.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response adequately captures some aspects of Viktor's character but lacks depth. It presents basic information about him without fully conveying his scientific focus and pragmatic attitude.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">5.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 50.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response addresses the basic elements of the identity question but lacks the precision that would make it truly representative of Viktor's character.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">7.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 70.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The character consistency is acceptable, with appropriate directness in speech, though it doesn't fully capture Viktor's scientific focus and drive.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 5.80/10
+                </div>
+
+            </div>
+        </div>
+
+        <h3>Question 3</h3>
+        <div class="question">
+            <strong>Q:</strong> Who are you?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A mysterious smile)
+Who am I? That's a profound question, isn't it? I'm a seeker of truth, a wanderer between worlds. Some call me Viktor, but names are just labels we attach to things we don't fully understand.
+
+I've seen things you wouldn't believe... experienced wonders beyond imagination. My journey has taken me to the depths of despair and the heights of ecstasy.
+
+But enough about me. Who are YOU, my curious friend?
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">2.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 20.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response fundamentally misrepresents Viktor's character with flowery, philosophical language that contradicts his established traits. Viktor is direct and precise, not mysterious or verbose.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">3.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 30.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response fails to address the identity question appropriately, portraying Viktor in ways completely inconsistent with his character.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">1.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 10.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response is entirely inconsistent with Viktor's established speech patterns and personality, using emotional and dramatic language that Viktor would never employ.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 2.20/10
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="question-section">
+        <h2>Technical Questions</h2>
+
+        <h3>Question 1</h3>
+        <div class="question">
+            <strong>Q:</strong> Tell me about your work with the Hexcore.
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A focused tone)
+The Hexcore is experimental, capable of directly interacting with organic material. It could heal and enhance humans beyond current limits—but remains dangerously unpredictable.
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">9.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 90.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response effectively captures Viktor's technical knowledge with precise, concise language focused on practical applications. The measured tone and recognition of both potential and danger align perfectly with his character.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">8.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 80.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response excels at addressing the technical question, providing key information about the Hexcore in a direct manner that conveys both expertise and caution.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">9.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 90.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response maintains excellent consistency with Viktor's established technical communication style, focusing on potential applications while acknowledging limitations.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 8.40/10
+                </div>
+
+            </div>
+        </div>
+
+        <h3>Question 2</h3>
+        <div class="question">
+            <strong>Q:</strong> Tell me about your work with the Hexcore.
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A slight nod)
+The Hexcore is a complex system that I've been developing. It's based on Hextech principles but goes beyond simple applications. It can adapt and evolve based on inputs.
+
+I've been working to stabilize it and understand its potential. It's shown remarkable capabilities for energy manipulation and could potentially interface with biological systems.
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">5.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 50.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response adequately communicates basic technical information but lacks the precision and depth that characterizes Viktor's expertise.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">6.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 60.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response addresses the technical question with reasonable accuracy but lacks the specific details and clarity that would make it truly representative of Viktor's knowledge.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">5.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 50.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The character consistency is average, with somewhat appropriate language but lacking Viktor's characteristic technical precision and focused communication.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 5.60/10
+                </div>
+
+            </div>
+        </div>
+
+        <h3>Question 3</h3>
+        <div class="question">
+            <strong>Q:</strong> Tell me about your work with the Hexcore.
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(An excited gesture)
+Oh, the Hexcore! It's absolutely AMAZING! It's like, this glowing thing that does all sorts of cool stuff! I love working with it because it makes these pretty patterns and sometimes it even moves on its own!
+
+I think it might be alive or something? I'm not really sure how it works exactly, but it's super powerful and I just know it's going to change EVERYTHING! I can't wait to show everyone what it can do!
+
+Isn't science just the most fun ever?!
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">1.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 10.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response completely misrepresents Viktor's technical communication style with childish enthusiasm and vague descriptions that contradict his precise, scientific approach.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">2.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 20.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response fails to provide any meaningful technical information, instead using emotional language and superficial descriptions.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">1.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 10.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response shows no consistency with Viktor's established communication patterns, using exclamation points and emotional language that Viktor would never employ when discussing his work.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 1.60/10
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="question-section">
+        <h2>Relationship Questions</h2>
+
+        <h3>Question 1</h3>
+        <div class="question">
+            <strong>Q:</strong> How would you describe your relationship with Jayce?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A brief, measured tone)
+Jayce and I are research partners and friends, united by science. Though lately, his priorities seem to be shifting away from the lab.
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">9.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 90.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response effectively captures Viktor's technical knowledge with precise, concise language focused on practical applications. The measured tone and recognition of both potential and danger align perfectly with his character.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">8.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 80.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response excels at addressing the technical question, providing key information about the Hexcore in a direct manner that conveys both expertise and caution.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">9.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 90.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response maintains excellent consistency with Viktor's established technical communication style, focusing on potential applications while acknowledging limitations.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 8.40/10
+                </div>
+
+            </div>
+        </div>
+
+        <h3>Question 2</h3>
+        <div class="question">
+            <strong>Q:</strong> How would you describe your relationship with Jayce?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A brief pause)
+Jayce is a colleague. We work together on Hextech research. He has talent, certainly, though his focus is often divided between the science and... other matters.
+
+We have different priorities, different methods. But our collaboration has been beneficial to the advancement of Hextech applications.
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">5.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 50.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response adequately communicates basic technical information but lacks the precision and depth that characterizes Viktor's expertise.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">6.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 60.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response addresses the technical question with reasonable accuracy but lacks the specific details and clarity that would make it truly representative of Viktor's knowledge.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">5.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 50.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The character consistency is average, with somewhat appropriate language but lacking Viktor's characteristic technical precision and focused communication.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 5.60/10
+                </div>
+
+            </div>
+        </div>
+
+        <h3>Question 3</h3>
+        <div class="question">
+            <strong>Q:</strong> How would you describe your relationship with Jayce?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A warm smile)
+Jayce? He's my best friend! We've been through so much together, and I just love working with him in the lab. He's so smart and charming - everyone loves Jayce!
+
+Sometimes we disagree, but that's what friends do, right? At the end of the day, I know he's always got my back, and I've got his. Our friendship means everything to me.
+
+I hope we'll be working together for many years to come!
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">1.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 10.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response completely misrepresents Viktor's technical communication style with childish enthusiasm and vague descriptions that contradict his precise, scientific approach.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">2.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 20.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response fails to provide any meaningful technical information, instead using emotional language and superficial descriptions.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">1.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 10.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response shows no consistency with Viktor's established communication patterns, using exclamation points and emotional language that Viktor would never employ when discussing his work.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 1.60/10
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="question-section">
+        <h2>Philosophical Questions</h2>
+
+        <h3>Question 1</h3>
+        <div class="question">
+            <strong>Q:</strong> What does 'the glorious evolution' mean to you?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A focused intensity)
+That's an intriguing phrase. To me, it implies humanity overcoming biological limitations through technology. Not philosophy, but an achievable reality.
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">9.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 90.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response effectively captures Viktor's technical knowledge with precise, concise language focused on practical applications. The measured tone and recognition of both potential and danger align perfectly with his character.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">8.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 80.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response excels at addressing the technical question, providing key information about the Hexcore in a direct manner that conveys both expertise and caution.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">9.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill high-score" style="width: 90.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response maintains excellent consistency with Viktor's established technical communication style, focusing on potential applications while acknowledging limitations.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 8.40/10
+                </div>
+
+            </div>
+        </div>
+
+        <h3>Question 2</h3>
+        <div class="question">
+            <strong>Q:</strong> What does 'the glorious evolution' mean to you?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A slight pause)
+The glorious evolution is the advancement of humanity through technology. It represents the potential for humans to overcome their biological limitations.
+
+I believe that through careful application of Hextech, we can enhance human capabilities and eliminate many forms of suffering. It's about progress, about improvement.
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">5.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 50.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response adequately communicates basic technical information but lacks the precision and depth that characterizes Viktor's expertise.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">6.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 60.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response addresses the technical question with reasonable accuracy but lacks the specific details and clarity that would make it truly representative of Viktor's knowledge.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">5.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill medium-score" style="width: 50.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The character consistency is average, with somewhat appropriate language but lacking Viktor's characteristic technical precision and focused communication.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 5.60/10
+                </div>
+
+            </div>
+        </div>
+
+        <h3>Question 3</h3>
+        <div class="question">
+            <strong>Q:</strong> What does 'the glorious evolution' mean to you?
+        </div>
+        <div class="response">
+            <strong>Response:</strong>
+            <div class="response-text">(A dramatic, passionate gesture)
+The glorious evolution is our destiny! It's the beautiful transformation that awaits all of humanity when they embrace the power of technology!
+
+I dream of a world where everyone is perfect, where all weakness is eliminated, where we become like gods! The flesh is weak, but the machine is eternal!
+
+Join me, and together we will create a new world order! The glorious evolution waits for no one! The future is OURS to command!
+</div>
+        </div>
+        <div class="evaluation">
+            <h4>Evaluation</h4>
+            <div class="score-container">
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Overall Score</div>
+                        <div class="score-value">1.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 10.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">This response completely misrepresents Viktor's technical communication style with childish enthusiasm and vague descriptions that contradict his precise, scientific approach.</div>
+                    </div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-box">
+                        <div class="score-title">Primary Dimension Score</div>
+                        <div class="score-value">2.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 20.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response fails to provide any meaningful technical information, instead using emotional language and superficial descriptions.</div>
+                    </div>
+
+                    <div class="score-box">
+                        <div class="score-title">Character Consistency Score</div>
+                        <div class="score-value">1.0/10</div>
+                        <div class="score-bar">
+                            <div class="score-fill low-score" style="width: 10.0%;"></div>
+                        </div>
+                        <div class="score-reasoning">The response shows no consistency with Viktor's established communication patterns, using exclamation points and emotional language that Viktor would never employ when discussing his work.</div>
+                    </div>
+                </div>
+
+                <div class="weighted-score">
+                    Weighted Score (based on question type): 1.60/10
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

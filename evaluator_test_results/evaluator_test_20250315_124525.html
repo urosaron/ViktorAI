@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViktorAI Evaluator Test Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2, h3, h4, h5 {
+            color: #2c3e50;
+            margin-top: 1.5em;
+        }
+        h1 {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 5px;
+        }
+        .metadata {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .metadata ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .metadata li {
+            margin-bottom: 5px;
+        }
+        .summary {
+            background-color: #eaf2f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .response {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+            white-space: pre-wrap;
+        }
+        .evaluation {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e74c3c;
+        }
+        .score {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .reasoning {
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            padding-left: 15px;
+            border-left: 2px solid #bdc3c7;
+        }
+        .divider {
+            height: 1px;
+            background-color: #ddd;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>ViktorAI Evaluator Test Results</h1>
+    
+    <div class="metadata">
+        <ul>
+            <li><strong>Date:</strong> {results['date']}</li>
+            <li><strong>Evaluator Model:</strong> {results['evaluator_model']}</li>
+        </ul>
+    </div>
+    
+    <h2>Summary</h2>
+    <div class="summary">
+        <p>This report contains evaluation results for {results['total_responses']} responses across {results['question_types']} question types.</p>
+    </div>
+
+    <h2>Identity Questions</h2>
+    <p>Question: Who are you?</p>
+
+    <h3>Response 1 (Expected quality: Good)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A measured, deliberate tone)<br>I am Viktor, a scientist from Zaun. I specialize in Hextech applications, particularly those that can enhance human capabilities. My work focuses on overcoming the limitations of the human form through technological advancement.<br><br>My background in the Undercity has shaped my perspective - I've witnessed firsthand how technology can elevate those who society has cast aside. I believe in progress, in the potential of humanity to evolve beyond its current constraints.<br><br>I don't have time for politics or social niceties. The work - the science - that's what matters. Everything else is... a distraction from what could be accomplished.<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 8/10</p>
+<p class="reasoning">The response effectively captures Viktor's character, showcasing his focus on science and progress. However, it could be more precise in its technical language and less emotive in its tone.</p><p class="score">Weighted Score: 8.10/10 (based on question type)</p><p class="score">Authenticity Score: 9/10</p><p class="reasoning">The response maintains a measured tone, consistent with Viktor's stoic personality. The mention of his background in the Undercity and his focus on Hextech applications also demonstrate an understanding of his character. However, the phrase 'I don't have time for politics or social niceties' feels slightly out of character for Viktor, as he is more likely to be direct without explicitly stating this.</p><p class="score">Technical Score: 6/10</p><p class="reasoning">The response demonstrates a good understanding of Hextech and its applications. However, the language used is not particularly precise, and some technical terms could be more accurately defined.</p><p class="score">Emotional Score: 7/10</p><p class="reasoning">The response captures Viktor's stoic nature well, but it could be less emotive in tone. The mention of 'distraction from what could be accomplished' hints at his pragmatic personality, but this is not explicitly stated throughout the response.</p><p class="score">Quality Score: 8/10</p><p class="reasoning">The response is well-structured and coherent, with a clear focus on Viktor's scientific work. However, some sentences feel slightly repetitive or cliche ('everything else is... a distraction'), which could be improved.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 2 (Expected quality: Medium)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A slight pause)<br>I am Viktor. A scientist. I work with Hextech technology.<br><br>I come from Zaun, though I spent years at the Academy in Piltover. My focus is on practical applications of technology, particularly those that can improve human life.<br><br>What else do you wish to know?<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 7/10</p>
+<p class="reasoning">The response captures some aspects of Viktor's character, including his focus on Hextech technology and his background from Zaun. However, it lacks the depth and nuance that would make it truly excellent. The response feels a bit flat, and Viktor's personality doesn't shine through as strongly as it could.</p><p class="score">Weighted Score: 6.40/10 (based on question type)</p><p class="score">Authenticity Score: 6/10</p><p class="reasoning">The response has some authentic elements, such as the mention of Hextech technology and Zaun. However, it feels a bit too straightforward and lacks the complexity that would make it truly authentic to Viktor's character. The dry humor and technical precision are not particularly evident.</p><p class="score">Technical Score: 8/10</p><p class="reasoning">The response reflects some technical knowledge, such as the mention of Hextech technology and practical applications. However, it doesn't delve deeply into specific details or demonstrate a strong understanding of complex scientific concepts.</p><p class="score">Emotional Score: 5/10</p><p class="reasoning">The response conveys some sense of Viktor's emotional state, but it's not particularly nuanced. The slight pause at the beginning is a good touch, but the rest of the response feels rather stoic and lacks the dry humor that would be characteristic of Viktor.</p><p class="score">Quality Score: 8/10</p><p class="reasoning">The response is well-organized and easy to follow. The language is clear, and the ideas are presented in a logical manner. However, it could benefit from more specific details and a stronger sense of Viktor's personality.</p>
+    </div>
+    <div class="divider"></div>
+
+    <h3>Response 3 (Expected quality: Poor)</h3>
+    
+    <div class="response">
+        <h4>Response:</h4>
+        <p>(A mysterious smile)<br>Who am I? That's a profound question, isn't it? I'm a seeker of truth, a wanderer between worlds. Some call me Viktor, but names are just labels we attach to things we don't fully understand.<br><br>I've seen things you wouldn't believe... experienced wonders beyond imagination. My journey has taken me to the depths of despair and the heights of ecstasy.<br><br>But enough about me. Who are YOU, my curious friend?<br></p>
+    </div>
+    
+    <div class="evaluation">
+        <h4>Evaluation:</h4>
+        <p class="score">Overall Score: 4/10</p>
+<p class="reasoning">The response has some elements that resonate with Viktor's character, but it also strays far from his tone and approach. It's too poetic and lacks the precision and technical language that Viktor typically uses.</p><p class="score">Weighted Score: 4.10/10 (based on question type)</p><p class="score">Authenticity Score: 3/10</p><p class="reasoning">While the response touches on themes of seeking truth and wondering about identity, it doesn't feel like Viktor's authentic voice. The mysterious smile and use of vague phrases like 'wanderer between worlds' create an air of mystery that is uncharacteristic for Viktor.</p><p class="score">Technical Score: 2/10</p><p class="reasoning">The response lacks technical language or even a hint at Viktor's scientific background. It's unclear what Viktor means by 'truth' or how it relates to his work in Hextech.</p><p class="score">Emotional Score: 5/10</p><p class="reasoning">Viktor's emotional state is somewhat captured in the response, particularly in the use of phrases like 'depths of despair and heights of ecstasy.' However, this is not enough to elevate the overall score.</p><p class="score">Quality Score: 7/10</p><p class="reasoning">The response has some nice turns of phrase and maintains a certain level of coherence. However, it's too meandering and lacks focus, which is characteristic of Viktor's direct and efficient communication style.</p>
+    </div>
+    <div class="divider"></div>
+
+</body>
+</html>

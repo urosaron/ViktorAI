@@ -1,0 +1,14 @@
+# Small Test Questions
+# This file contains a small set of questions for testing the benchmark system
+
+# Identity Questions
+What was your childhood like in Zaun?
+
+# Technical Questions
+Can you explain how the Hexcore interfaces with biological systems?
+
+# Relationship Questions
+What do you think of Heimerdinger's approach to science?
+
+# Philosophical Questions
+Do you believe technology should have limits? 

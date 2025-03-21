@@ -25,7 +25,6 @@ try:
     from src.config import Config
     from src.llm_interface import OllamaInterface
     from src.viktor_ai import ViktorAI
-    from src.evaluator import Evaluator
 except ImportError:
     print("Warning: Failed to import src modules. Make sure you're running from the project root directory.")
     sys.exit(1)
@@ -62,26 +61,80 @@ class EvaluationMetrics:
         Returns:
             String indicating the question type (identity, technical, relationship, philosophical)
         """
-        # Create a temporary Evaluator with a dummy LLM to use its get_question_type method
-        dummy_llm = type('DummyLLM', (), {'generate': lambda *args, **kwargs: ''})()
-        evaluator = Evaluator(dummy_llm)
-        return evaluator.get_question_type(question)
+        # Use our own implementation instead of importing from test_evaluator.py
+        # This provides more consistent categorization
+        question_lower = question.lower()
+        
+        # First check for specific questions that might need special handling
+        specific_questions = {
+            "who are you?": "identity",
+            "what's your name?": "identity", 
+            "tell me about yourself.": "identity",
+            "how do you feel about your condition?": "identity",
+            "what motivates your scientific work?": "identity",
+            "what happened when sky tried to help you with the hexcore?": "relationship",
+            "how did you feel when jayce presented hextech to the academy?": "relationship",
+            "what was your reaction to being dismissed from the hextech project?": "relationship",
+            "tell me about your disagreement with heimerdinger about progress and hextech.": "relationship",
+            "what do you think about jayce's recent focus on politics?": "relationship",
+            "what are your thoughts on heimerdinger?": "relationship",
+            "what happened during your presentation to the council?": "relationship",
+            "what are your thoughts on the divide between piltover and zaun?": "philosophical",
+            "how do you view the relationship between humanity and technology?": "philosophical",
+            "what does \"the glorious evolution\" mean to you?": "philosophical", 
+            "if you could change one decision you made, what would it be?": "philosophical",
+            "what do you think is the purpose of scientific advancement?": "philosophical"
+        }
+        
+        # Check if this is a specific question we've identified
+        for specific_q, q_type in specific_questions.items():
+            if question_lower.strip() == specific_q.lower():
+                return q_type
+                
+        # Identity questions (check these first)
+        identity_keywords = ["who are you", "tell me about yourself", "your name", "introduce yourself", 
+                         "what are you", "who is viktor", "about yourself"]
+        if any(keyword in question_lower for keyword in identity_keywords):
+            return "identity"
+        
+        # Relationship questions
+        relationship_keywords = ["jayce", "heimerdinger", "sky", "relationship", "friend", "colleague", 
+                             "thoughts on", "feelings about", "feel about", "describe your relationship"]
+        if any(keyword in question_lower for keyword in relationship_keywords):
+            return "relationship"
+        
+        # Philosophical questions
+        philosophical_keywords = ["evolution", "glorious", "future", "humanity", "progress", "philosophy", 
+                               "believe", "think about", "purpose", "divide", "piltover and zaun", 
+                               "change one decision", "ethics", "moral", "right and wrong", "principles",
+                               "values", "meaning", "greater good"]
+        if any(keyword in question_lower for keyword in philosophical_keywords):
+            return "philosophical"
+            
+        # Technical questions (check last as they're often the default)
+        technical_keywords = ["hexcore", "hextech", "technology", "research", "work", "scientific", 
+                          "limitations", "improve", "applications", "experiment", "results", 
+                          "methodology", "theory", "development", "innovation"]
+        if any(keyword in question_lower for keyword in technical_keywords):
+            return "technical"
+        
+        # Default to identity if we can't determine the type
+        return "identity"
     
     @staticmethod
     def get_evaluation_criteria(question_type):
         """
         Get specific evaluation criteria based on the question type.
-        
-        Args:
+    
+    Args:
             question_type: The type of question (identity, technical, relationship, philosophical)
-            
-        Returns:
+        
+    Returns:
             String containing specific evaluation criteria for this question type
         """
-        # Create a temporary Evaluator with a dummy LLM to use its get_evaluation_criteria method
-        dummy_llm = type('DummyLLM', (), {'generate': lambda *args, **kwargs: ''})()
-        evaluator = Evaluator(dummy_llm)
-        return evaluator.get_evaluation_criteria(question_type)
+        # Ensure we're using the same evaluation criteria as in test_evaluator.py
+        from tests.test_evaluator import get_evaluation_criteria
+        return get_evaluation_criteria(question_type)
     
     @staticmethod
     def calculate_weighted_score(metrics):
@@ -94,10 +147,44 @@ class EvaluationMetrics:
         Returns:
             Float representing the weighted overall score
         """
-        # Create a temporary Evaluator with a dummy LLM to use its calculate_weighted_score method
-        dummy_llm = type('DummyLLM', (), {'generate': lambda *args, **kwargs: ''})()
-        evaluator = Evaluator(dummy_llm)
-        return evaluator.calculate_weighted_score(metrics)
+        question_type = metrics.get("question_type", "identity")
+        
+        if question_type == "identity":
+            return (
+                metrics["authenticity_score"] * 0.5 +
+                metrics["technical_score"] * 0.1 +
+                metrics["emotional_score"] * 0.2 +
+                metrics["quality_score"] * 0.2
+            )
+        elif question_type == "technical":
+            return (
+                metrics["authenticity_score"] * 0.2 +
+                metrics["technical_score"] * 0.5 +
+                metrics["emotional_score"] * 0.1 +
+                metrics["quality_score"] * 0.2
+            )
+        elif question_type == "relationship":
+            return (
+                metrics["authenticity_score"] * 0.4 +
+                metrics["technical_score"] * 0.1 +
+                metrics["emotional_score"] * 0.3 +
+                metrics["quality_score"] * 0.2
+            )
+        elif question_type == "philosophical":
+            return (
+                metrics["authenticity_score"] * 0.4 +
+                metrics["technical_score"] * 0.3 +
+                metrics["emotional_score"] * 0.1 +
+                metrics["quality_score"] * 0.2
+            )
+        else:
+            # Default weighting
+            return (
+                metrics["authenticity_score"] * 0.25 +
+                metrics["technical_score"] * 0.25 +
+                metrics["emotional_score"] * 0.25 +
+                metrics["quality_score"] * 0.25
+            )
     
     @staticmethod
     def evaluate_response(response, question, category, evaluator_llm):
@@ -118,8 +205,8 @@ class EvaluationMetrics:
             # If we're passed a dict or object with question_type attribute
             question_type = question.question_type
         else:
-            # Use the question_type directly
-            question_type = EvaluationMetrics.get_question_type(question)
+            # Use the question_type passed to us
+            question_type = "identity"  # Default
         
         # Handle mock implementation specifically
         if hasattr(evaluator_llm, 'config') and isinstance(evaluator_llm.config, MockConfig):
@@ -140,16 +227,12 @@ class EvaluationMetrics:
                 "response_time": 0.0
             }
         
-        # Check if evaluator_llm is already an Evaluator instance
-        if isinstance(evaluator_llm, Evaluator):
-            evaluator = evaluator_llm
-        else:
-            # Create an Evaluator instance with the provided LLM
-            evaluator = Evaluator(evaluator_llm)
+        # Use the evaluate_response function from test_evaluator.py
+        from tests.test_evaluator import evaluate_response as test_evaluator_evaluate_response
         
         try:
             # Call the evaluator with specified question type
-            metrics = evaluator.evaluate_response(response, question, question_type)
+            metrics = test_evaluator_evaluate_response(response, question, evaluator_llm, question_type)
             
             # Add the question type to the metrics
             metrics["question_type"] = question_type
@@ -158,16 +241,16 @@ class EvaluationMetrics:
             metrics["response_time"] = 0.0
             
             return metrics
-            
+                
         except Exception as e:
             print(f"Error evaluating response: {e}")
             # Return default scores with error message
             return {
-                "overall_score": 5.0,
+                "overall_score": 5.0,  # Using 5.0 instead of 3.0 to be consistent with test_evaluator.py
                 "overall_reasoning": f"The evaluation process encountered an error: {str(e)}. This is a fallback score provided when the evaluation couldn't be completed properly.",
-                "primary_dimension_score": 5.0,
+                "primary_dimension_score": 5.0,  # Using 5.0 instead of 3.0 to be consistent
                 "primary_dimension_reasoning": "This is a default fallback score. The primary dimension evaluation couldn't be completed due to an error in the evaluation process.",
-                "character_consistency_score": 5.0,
+                "character_consistency_score": 5.0,  # Using 5.0 instead of 3.0 to be consistent
                 "character_consistency_reasoning": "This is a default fallback score. The character consistency evaluation couldn't be completed due to an error in the evaluation process.",
                 "question_type": question_type,
                 "response_time": 0.0
@@ -538,147 +621,210 @@ def run_benchmark(questions_with_types, model_name, prompt_categories=None, temp
     # Extract model family from model name (e.g., gemma3 from gemma3:1b)
     model_family = model_name.split(":")[0] if ":" in model_name else model_name
     
-    # Create model-specific directories
-    model_dir = output_dir / model_family
-    model_dir.mkdir(exist_ok=True)
+    # Create model family directory
+    family_dir = output_dir / model_family
+    family_dir.mkdir(exist_ok=True, parents=True)
     
-    model_family_dir = model_dir / safe_model_name
-    model_family_dir.mkdir(exist_ok=True)
+    # Create model version directory
+    model_dir = family_dir / model_name
+    model_dir.mkdir(exist_ok=True, parents=True)
     
-    # Create run-specific directory
-    run_dir = model_family_dir / f"run_{timestamp}"
+    # Create run-specific directory with timestamp
+    run_dir = model_dir / f"run_{timestamp}"
     run_dir.mkdir(exist_ok=True)
     
-    # Create raw_data and visualizations directories
+    # Create subdirectories for raw data and visualizations
     raw_data_dir = run_dir / "raw_data"
-    raw_data_dir.mkdir(exist_ok=True)
-    
     visualizations_dir = run_dir / "visualizations"
+    raw_data_dir.mkdir(exist_ok=True)
     visualizations_dir.mkdir(exist_ok=True)
+    
+    # Extract just the questions for storing in results
+    questions = [q for q, _ in questions_with_types]
     
     # Initialize results dictionary
     results = {
         "model_name": model_name,
         "evaluator_model": evaluator_model,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "timestamp": timestamp,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "use_mock": use_mock,
+        "mock_inference": mock_inference,
+        "category_specific_mode": category_specific_mode,
         "metrics": {},
-        "categories": []
+        "questions": questions
     }
     
-    # Set up Config for Viktor AI
-    if use_mock:
-        # Use mock config for testing
-        print("Using MockConfig for benchmark")
-        config = MockConfig(model_name=model_name, temperature=temperature, max_tokens=max_tokens)
-    else:
-        # Use real Config
-        config = Config(model_name=model_name, temperature=temperature, max_tokens=max_tokens)
-    
-    # Set up Config for evaluator
-    if use_mock:
-        # Use mock config for testing
-        print("Using MockConfig for evaluator")
-        evaluator_config = MockConfig(model_name=evaluator_model, temperature=0.2, max_tokens=1000)
-        evaluator_llm = MockOllamaInterface(evaluator_config)
-    else:
-        # Use real Config for evaluator
-        evaluator_config = Config(model_name=evaluator_model, temperature=0.2, max_tokens=1000)
-        evaluator_llm = OllamaInterface(evaluator_config)
-    
-    # Create Evaluator instance
-    evaluator = Evaluator(evaluator_llm)
-    
-    # Determine prompt categories to use
+    # Set default prompt categories if not provided
     if prompt_categories is None:
-        if category_specific_mode:
-            prompt_categories = ["identity", "technical", "relationship", "philosophical"]
-        else:
-            prompt_categories = ["standard"]
+        prompt_categories = list(PROMPT_CATEGORIES.keys())
     
-    results["categories"] = prompt_categories
-    
-    # Process each category
+    # Initialize metrics dictionary for each category
     for category in prompt_categories:
-        print(f"\nProcessing {category} prompt category...")
-        
-        # Initialize metrics for this category
         results["metrics"][category] = []
-        
-        if category_specific_mode:
-            # For category-specific mode, we only process questions of the matching type
-            filtered_questions = [(q, t) for q, t in questions_with_types if t == category]
-            if not filtered_questions:
-                print(f"No questions of type {category} found, skipping this category")
-                continue
-            print(f"Found {len(filtered_questions)} questions of type {category}")
-        else:
-            # For standard mode, we process all questions
-            filtered_questions = questions_with_types
-            print(f"Using all {len(filtered_questions)} questions")
-        
-        # Create specialized Viktor AI for this category
-        if category_specific_mode:
-            # Get specialized prompt for this category
-            specialized_prompt = get_specialized_prompt(category, config)
-            
-            # Create Viktor AI with specialized prompt
-            viktor = create_custom_viktor_ai(config, specialized_prompt, mock_inference, None)
-        else:
-            # Create standard Viktor AI
-            viktor = create_custom_viktor_ai(config, None, mock_inference, None)
-        
-        # Generate responses
-        responses = []
-        
-        with tqdm(total=len(filtered_questions), desc=f"Generating {category} responses") as pbar:
-            for question, question_type in filtered_questions:
-                # Record start time
-                start_time = time.time()
-                
-                # Generate response
-                response = viktor.generate_response(question)
-                
-                # Record end time
-                end_time = time.time()
-                response_time = end_time - start_time
-                
-                # Add response to list
-                responses.append({
-                    "question": question,
-                    "question_type": question_type,
-                    "response": response,
-                    "response_time": response_time
-                })
-                
-                pbar.update(1)
-        
-        # Evaluate responses
-        print(f"\nEvaluating {category} responses...")
-        
-        with tqdm(total=len(responses), desc=f"Evaluating {category} responses") as pbar:
-            for response_data in responses:
-                # Evaluate response
-                metrics = evaluator.evaluate_response(
-                    response_data["response"],
-                    response_data["question"],
-                    response_data["question_type"]
-                )
-                
-                # Update response time from generation
-                metrics["response_time"] = response_data["response_time"]
-                
-                # Add question and response to metrics
-                metrics["question_type"] = response_data["question_type"]
-                metrics["question"] = response_data["question"]
-                metrics["response"] = response_data["response"]
-                
-                # Add metrics to results
-                results["metrics"][category].append(metrics)
-                
-                pbar.update(1)
     
+    # Load character data from config
+    config = MockConfig(model_name, temperature, max_tokens) if use_mock else Config(model_name=model_name, temperature=temperature, max_tokens=max_tokens)
+    
+    # Setup Viktor and evaluator
+    evaluator_config = MockConfig(evaluator_model, temperature=0.7, max_tokens=2000) if use_mock else Config(model_name=evaluator_model, temperature=0.7, max_tokens=2000)
+    
+    # Initialize the Viktor AI with the base configuration
+    viktor_ai = create_custom_viktor_ai(config, None, use_mock, mock_inference)
+    print(f"Viktor AI initialized with model: {model_name}")
+    
+    # Initialize the evaluator
+    evaluator = MockOllamaInterface(evaluator_config) if use_mock else OllamaInterface(evaluator_config)
+    print(f"Evaluator initialized with model: {evaluator_model}")
+    
+    if category_specific_mode:
+        print("Using category-specific mode")
+        
+        # Group questions by type
+        questions_by_type = {
+            "identity": [],
+            "technical": [],
+            "relationship": [],
+            "philosophical": []
+        }
+        
+        # Organize questions by their types
+        for question, question_type in questions_with_types:
+            if question_type in questions_by_type:
+                questions_by_type[question_type].append(question)
+        
+        # Map question types to prompt categories
+        type_to_category = {
+            "identity": "personality_focused",
+            "technical": "technical_focused",
+            "relationship": "relationship_focused",
+            "philosophical": "full"
+        }
+        
+        # Process each question type with its appropriate prompt category
+        for question_type, type_questions in questions_by_type.items():
+            if not type_questions:
+                continue
+                
+            category = type_to_category[question_type]
+            
+            if category not in prompt_categories:
+                continue
+                
+            print(f"Processing {len(type_questions)} {question_type} questions with {category} prompt")
+            
+            # Create specialized Viktor AI for this category
+            specialized_prompt = get_specialized_prompt(category, config)
+            specialized_viktor = create_custom_viktor_ai(config, specialized_prompt, use_mock, mock_inference)
+            
+            # Process each question in this type
+            responses = []
+            
+            with tqdm(total=len(type_questions), desc=f"Generating responses for {question_type} questions") as pbar:
+                for question in type_questions:
+                    # Generate response and measure time
+                    start_time = time.time()
+                    response = specialized_viktor.generate_response(question)
+                    response_time = time.time() - start_time
+            
+                    # Store response data
+                    responses.append({
+                        "question": question,
+                        "response": response,
+                        "response_time": response_time,
+                        "question_type": question_type
+                    })
+                    
+                    pbar.update(1)
+            
+            print()  # Add a newline after the progress bar
+        
+            # Add results for this category
+            if category not in results["metrics"]:
+                results["metrics"][category] = []
+            
+            # Evaluate all responses for this category
+            print(f"Evaluating {len(responses)} responses for category: {category}")
+            with tqdm(total=len(responses), desc=f"Evaluating {category} responses") as pbar:
+                for response_data in responses:
+                    # Evaluate response
+                    metrics = EvaluationMetrics.evaluate_response(
+                        response_data["response"],
+                        response_data["question"],
+                        category,
+                        evaluator
+                    )
+                    
+                    # Update response time from generation
+                    metrics["response_time"] = response_data["response_time"]
+                    
+                    # Add question and response to metrics
+                    metrics["question_type"] = response_data["question_type"]
+                    metrics["question"] = response_data["question"]
+                    metrics["response"] = response_data["response"]
+                    
+                    # Add metrics to results
+                    results["metrics"][category].append(metrics)
+                    
+                    pbar.update(1)
+    
+    else:
+        # Original mode: Process all questions for each category
+        for category in prompt_categories:
+            print(f"Processing category: {category}")
+            
+            # Create specialized Viktor AI for this category
+            specialized_prompt = get_specialized_prompt(category, config)
+            specialized_viktor = create_custom_viktor_ai(config, specialized_prompt, use_mock, mock_inference)
+            
+            # Process each question
+            responses = []
+            
+            with tqdm(total=len(questions_with_types), desc=f"Generating responses for {category}") as pbar:
+                for question, question_type in questions_with_types:
+                    # Generate response and measure time
+                    start_time = time.time()
+                    response = specialized_viktor.generate_response(question)
+                    response_time = time.time() - start_time
+                    
+                    # Store response data
+                    responses.append({
+                        "question": question,
+                        "response": response,
+                        "response_time": response_time,
+                        "question_type": question_type
+                    })
+                    
+                    pbar.update(1)
+            
+            print()  # Add a newline after the progress bar
+            
+            # Evaluate all responses for this category
+            print(f"Evaluating {len(responses)} responses for category: {category}")
+            with tqdm(total=len(responses), desc=f"Evaluating {category} responses") as pbar:
+                for response_data in responses:
+                    # Evaluate response
+                    metrics = EvaluationMetrics.evaluate_response(
+                        response_data["response"],
+                        response_data["question"],
+                        category,
+                        evaluator
+                    )
+                    
+                    # Update response time from generation
+                    metrics["response_time"] = response_data["response_time"]
+                    
+                    # Add question and response to metrics
+                    metrics["question_type"] = response_data["question_type"]
+                    metrics["question"] = response_data["question"]
+                    metrics["response"] = response_data["response"]
+                    
+                    # Add metrics to results
+                    results["metrics"][category].append(metrics)
+            
+                    pbar.update(1)
+            
     # Calculate summary statistics
     summary_stats = calculate_summary_statistics(results)
     results["summary_stats"] = summary_stats
@@ -698,24 +844,31 @@ def run_benchmark(questions_with_types, model_name, prompt_categories=None, temp
     create_html_report(results, html_file)
     print(f"HTML report saved to {html_file}")
     
-    # Create/update the "latest" copies
+    # Create "latest" reference files in the model directory
     try:
-        # Copy the files (don't use symlinks as they might not work on all systems)
-        import shutil
+        latest_json = model_dir / f"benchmark_{safe_model_name}_latest.json"
+        latest_md = model_dir / f"benchmark_{safe_model_name}_latest.md"
+        latest_html = model_dir / f"benchmark_{safe_model_name}_latest.html"
         
-        # Define latest files
-        md_latest = model_family_dir / f"benchmark_{safe_model_name}_latest.md"
-        html_latest = model_family_dir / f"benchmark_{safe_model_name}_latest.html"
-        json_latest = model_family_dir / f"benchmark_{safe_model_name}_latest.json"
-        
-        # Copy files
-        shutil.copy2(markdown_file, md_latest)
-        shutil.copy2(html_file, html_latest)
-        shutil.copy2(results_file, json_latest)
-        
-        print(f"Latest files updated at {model_family_dir}")
+        shutil.copy(results_file, latest_json)
+        shutil.copy(markdown_file, latest_md)
+        shutil.copy(html_file, latest_html)
+        print(f"Created 'latest' reference files in {model_dir}")
     except Exception as e:
-        print(f"Warning: Failed to create latest copies: {e}")
+        print(f"Error creating latest reference files: {e}")
+    
+    print(f"Benchmark complete! Results saved to {output_dir}")
+    
+    # Print summary
+    print("Summary of results:")
+    print()
+    print("Overall scores by category:")
+    for category, stats in summary_stats["by_category"].items():
+        print(f"  {category}: {stats['avg_overall_score']:.2f}/10")
+    print()
+    print("Overall scores by question type:")
+    for qtype, stats in summary_stats["by_question_type"].items():
+        print(f"  {qtype}: {stats['avg_overall_score']:.2f}/10")
     
     return results
 
@@ -756,12 +909,7 @@ def main():
     if args.categories:
         categories = args.categories.split()
     else:
-        # If category-specific mode is enabled and no specific categories are provided,
-        # include all the necessary categories for each question type
-        if args.category_specific_mode:
-            categories = ["personality_focused", "technical_focused", "relationship_focused", "full"]
-        else:
-            categories = None
+        categories = None
     
     # Run the benchmark
     results = run_benchmark(
