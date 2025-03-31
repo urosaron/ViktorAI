@@ -48,5 +48,19 @@ model_test_results/
 benchmark_results/
 mock_model_test_results/
 mock_benchmark_results/
+evaluator_test_results/
+portfolio/
+
+# Demo and test files
+demo_script.md
+demo_questions.txt
+demo_talking_points.md
+project_achievements.md
+test_questions.txt
+model_test_questions_current.txt
+model_test_questions_original.txt
+analyze_json.py
+test_folder_creation/
+
 # We're including these files in the repository
 # character_data/ 
