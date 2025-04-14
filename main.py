@@ -17,43 +17,79 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description="ViktorAI - Viktor from Arcane Season 1"
     )
-    parser.add_argument(
+    
+    # Model arguments
+    model_group = parser.add_argument_group("Model Settings")
+    model_group.add_argument(
         "--model",
         type=str,
         default="llama3",
         help="The Ollama model to use (default: llama3)",
     )
-    parser.add_argument(
+    model_group.add_argument(
         "--temperature",
         type=float,
         default=0.7,
         help="Temperature for response generation (default: 0.7)",
     )
-    parser.add_argument(
-        "--max_tokens",
+    model_group.add_argument(
+        "--max-tokens",
         type=int,
         default=500,
         help="Maximum tokens for response generation (default: 500)",
     )
 
+    # Brain integration arguments
+    brain_group = parser.add_argument_group("ViktorBrain Integration")
+    brain_group.add_argument(
+        "--brain-url",
+        type=str,
+        default="http://localhost:8000",
+        help="ViktorBrain API URL (default: http://localhost:8000)",
+    )
+    brain_group.add_argument(
+        "--brain-neurons",
+        type=int,
+        default=1000,
+        help="Number of neurons for brain simulation (default: 1000)",
+    )
+    brain_group.add_argument(
+        "--brain-density",
+        type=float,
+        default=0.1,
+        help="Connection density for brain simulation (default: 0.1)",
+    )
+    brain_group.add_argument(
+        "--brain-activity",
+        type=float,
+        default=0.02,
+        help="Spontaneous activity for brain simulation (default: 0.02)",
+    )
+    brain_group.add_argument(
+        "--no-brain",
+        action="store_true",
+        help="Disable ViktorBrain integration",
+    )
+
     # Response classifier arguments
-    parser.add_argument(
+    classifier_group = parser.add_argument_group("Response Classifier")
+    classifier_group.add_argument(
         "--use-classifier",
         action="store_true",
         help="Enable response quality classification with PyTorch (default: False)",
     )
-    parser.add_argument(
+    classifier_group.add_argument(
         "--no-classifier",
         action="store_true",
         help="Disable response quality classification even if available",
     )
-    parser.add_argument(
+    classifier_group.add_argument(
         "--min-score",
         type=float,
         default=0.6,
         help="Minimum acceptable score for responses (default: 0.6)",
     )
-    parser.add_argument(
+    classifier_group.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug output for response classification",
@@ -68,13 +104,22 @@ def main():
 
     # Initialize configuration
     config = Config(
+        # Model settings
         model_name=args.model,
         temperature=args.temperature,
         max_tokens=args.max_tokens,
+        
         # Response classifier settings
         use_response_classifier=args.use_classifier and not args.no_classifier,
         min_response_score=args.min_score,
         debug=args.debug,
+        
+        # Brain integration settings
+        brain_api_url=args.brain_url,
+        brain_neurons=args.brain_neurons,
+        brain_connection_density=args.brain_density,
+        brain_spontaneous_activity=args.brain_activity,
+        use_brain=not args.no_brain,
     )
 
     # Initialize the chatbot
@@ -87,6 +132,14 @@ def main():
     print(f"Using model: {config.model_name}")
     print(f"Temperature: {config.temperature}")
     print(f"Max tokens: {config.max_tokens}")
+
+    # Show brain integration info
+    if config.use_brain:
+        print(f"ViktorBrain integration: Enabled")
+        print(f"  - API URL: {config.brain_api_url}")
+        print(f"  - Neurons: {config.brain_neurons}")
+    else:
+        print("ViktorBrain integration: Disabled")
 
     # Show classifier info if enabled
     if config.use_response_classifier:

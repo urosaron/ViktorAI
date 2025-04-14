@@ -19,6 +19,7 @@ class OllamaInterface:
             config: Configuration object containing model settings.
         """
         self.config = config
+        # Use localhost when running locally
         self.api_base = "http://localhost:11434/api"
         self.history = []
     

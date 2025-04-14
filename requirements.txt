@@ -1,4 +1,4 @@
-requests>=2.28.0
+requests==2.31.0
 pathlib>=1.0.1
 numpy>=1.20.0
 sentence-transformers>=2.2.2

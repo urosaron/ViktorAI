@@ -7,11 +7,14 @@ loading character data, generating prompts, and handling conversations.
 
 import os
 from typing import List
+import requests
+import json
 
 from src.character_data_loader import CharacterDataLoader
 from src.llm_interface import OllamaInterface
 from src.vector_store import VectorStore
 from src.response_classifier import ResponseClassifier
+from src.brain_client import BrainClient
 
 
 class ViktorAI:
@@ -24,6 +27,15 @@ class ViktorAI:
             config: Configuration object containing settings.
         """
         self.config = config
+
+        # Initialize brain client
+        self.brain = BrainClient(
+            api_url=config.brain_api_url,
+            auto_initialize=True,
+            neurons=config.brain_neurons,
+            connection_density=config.brain_connection_density,
+            spontaneous_activity=config.brain_spontaneous_activity
+        )
 
         # Initialize character data loader
         self.data_loader = CharacterDataLoader(config)
@@ -50,6 +62,7 @@ class ViktorAI:
         self.system_prompt = self._prepare_system_prompt()
 
         print("ViktorAI initialized successfully.")
+        print(f"Brain client connected: {self.brain.is_connected}")
 
     def _initialize_vector_store(self):
         """Initialize the vector store for RAG."""
@@ -81,6 +94,71 @@ class ViktorAI:
 
         return f"{main_prompt}\n\n{character_data}"
 
+    def _process_through_brain(self, user_input: str) -> str:
+        """Process the user input through ViktorBrain.
+
+        Args:
+            user_input: The user's input message.
+
+        Returns:
+            Processed input with brain metrics.
+        """
+        try:
+            # Check if the brain client is connected
+            if not self.brain.is_connected:
+                if not self.brain.check_connection():
+                    print("Warning: ViktorBrain API is not accessible")
+                    return user_input
+
+            # Process the input through the brain
+            brain_analysis = self.brain.process_input(
+                user_input=user_input,
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens
+            )
+            
+            if not brain_analysis:
+                print("Warning: No brain analysis received")
+                return user_input
+            
+            # Format the brain analysis into the prompt
+            brain_context = f"""
+Brain State Analysis:
+- Processing Mode: {brain_analysis.get('processing_mode', 'N/A')}
+- Brain State: {brain_analysis.get('brain_state', 'N/A')}
+- Activation Level: {brain_analysis.get('activation_level', 'N/A'):.2f}
+- Dominant Cluster: {brain_analysis.get('dominant_cluster', 'N/A')}
+- Technical/Emotional Balance: {brain_analysis.get('technical_ratio', 'N/A'):.2f}/{brain_analysis.get('emotional_ratio', 'N/A'):.2f}
+
+Cluster Distribution:
+{json.dumps(brain_analysis.get('cluster_distribution', {}), indent=2)}
+"""
+            
+            return f"{user_input}\n\n{brain_context}"
+            
+        except Exception as e:
+            print(f"Warning: Error processing through ViktorBrain: {e}")
+            return user_input
+
+    def _process_response_feedback(self, response: str) -> None:
+        """Process response as feedback to the brain.
+
+        Args:
+            response: Viktor's response to the user.
+        """
+        try:
+            # Check if the brain client is connected
+            if not self.brain.is_connected:
+                if not self.brain.check_connection():
+                    print("Warning: ViktorBrain API is not accessible for feedback")
+                    return
+
+            # Send the response back to the brain as feedback
+            self.brain.process_feedback(response)
+            
+        except Exception as e:
+            print(f"Warning: Error sending feedback to ViktorBrain: {e}")
+
     def generate_response(self, user_input: str) -> str:
         """Generate a response to user input.
 
@@ -90,11 +168,14 @@ class ViktorAI:
         Returns:
             Viktor's response as a string.
         """
+        # Process the input through ViktorBrain
+        processed_input = self._process_through_brain(user_input)
+        
         # Retrieve relevant context from the vector store
-        context = self._retrieve_context(user_input)
+        context = self._retrieve_context(processed_input)
 
         # Prepare the prompt with the retrieved context
-        prompt = self._prepare_rag_prompt(user_input, context)
+        prompt = self._prepare_rag_prompt(processed_input, context)
 
         # Get the current conversation history
         history = self.llm.get_history()
@@ -126,7 +207,7 @@ class ViktorAI:
 
             # Evaluate the response quality
             evaluation = self.response_classifier.evaluate_response(
-                user_input, response
+                processed_input, response
             )
 
             # Check if the response meets quality thresholds
@@ -146,281 +227,208 @@ class ViktorAI:
             # If we've reached the maximum number of attempts, use the best response
             if attempts >= max_attempts:
                 if self.config.debug:
-                    print(
-                        f"Couldn't generate a high-quality response after {max_attempts} attempts."
-                    )
+                    print("Maximum attempts reached. Using best response.")
                 break
 
+        # Process the response as feedback to the brain
+        self._process_response_feedback(response)
+
+        # Return the response
         return response
 
     def _retrieve_context(self, query: str) -> str:
         """Retrieve relevant context from the vector store.
 
         Args:
-            query: The user's query.
+            query: The query to search for.
 
         Returns:
-            Retrieved context as a string.
+            Retrieved context as formatted string.
         """
-        if self.vector_store is None:
-            # Fall back to the old method if vector store is not available
-            if self._is_scene_query(query):
-                return self._get_relevant_scene_info(query)
+        try:
+            if not self.vector_store:
+                return ""
+                
+            # Add query to get relevant context
+            results = self.vector_store.query(query, top_k=3)
+            
+            if not results:
+                return ""
+
+            # Format the results for inclusion in the prompt
+            context_parts = []
+            
+            for doc, score in results:
+                # Handle results as tuples of (document, score)
+                context_parts.append(f"--- Relevant information ---\n{doc}")
+                
+            context = "\n\n".join(context_parts)
+            
+            return context
+        except Exception as e:
+            print(f"Error retrieving context: {e}")
             return ""
-
-        # Search the vector store for relevant documents
-        results = self.vector_store.similarity_search_with_metadata(query, k=5)
-
-        if not results:
-            return ""
-
-        # Format the results
-        context = "Here is relevant information from my knowledge base:\n\n"
-
-        for doc, score, metadata in results:
-            # Add metadata information
-            source = metadata.get("source", "unknown")
-            section = metadata.get("section", "")
-            doc_type = metadata.get("type", "")
-
-            # Format based on document type
-            if doc_type == "scene_analysis":
-                context += f"--- Scene Information: {section} ---\n{doc}\n\n"
-            elif doc_type == "character_trait":
-                context += f"--- Character Trait: {section} ---\n{doc}\n\n"
-            elif doc_type == "knowledge":
-                context += f"--- Technical Knowledge: {section} ---\n{doc}\n\n"
-            elif doc_type == "relationship":
-                context += f"--- Relationship: {section} ---\n{doc}\n\n"
-            elif doc_type == "world_knowledge":
-                context += f"--- World Context: {section} ---\n{doc}\n\n"
-            elif doc_type == "guideline":
-                context += f"--- Response Guideline: {section} ---\n{doc}\n\n"
-            else:
-                context += f"--- {section} ---\n{doc}\n\n"
-
-        return context
 
     def _prepare_rag_prompt(self, user_input: str, context: str) -> str:
-        """Prepare a RAG prompt with retrieved context.
+        """Prepare the prompt with retrieved context for RAG.
 
         Args:
-            user_input: The user's input message.
-            context: Retrieved context.
+            user_input: The user's input (possibly processed by brain)
+            context: Retrieved context from the vector store
 
         Returns:
-            The prepared prompt.
+            Complete prompt for the LLM
         """
-        if not context:
+        # If no context was retrieved, just return the user input
+        if not context.strip():
             return user_input
 
-        return f"""I need to respond to the user as Viktor from Arcane Season 1.
+        # Create a prompt with the retrieved context
+        prompt = f"""
+I'll provide you with some relevant information that might help you respond:
 
 {context}
 
-Based on the information above and my character knowledge, I should respond to:
+Now, please respond to this message:
 
-User: {user_input}
+{user_input}
+"""
 
-Remember to maintain Viktor's voice, personality, and knowledge boundaries. Only reference events that happened in Season 1. Do not make up events that didn't happen in the show."""
-
-    # Legacy methods for backward compatibility
+        return prompt
 
     def _is_scene_query(self, user_input: str) -> bool:
-        """Check if the user is asking about a specific scene or event.
+        """Determine if a query is asking about a specific scene.
 
         Args:
             user_input: The user's input message.
 
         Returns:
-            True if the user is asking about a specific scene, False otherwise.
+            True if the query is about a scene, False otherwise.
         """
-        # List of keywords that might indicate a scene query
+        # Clean the input
+        input_lower = user_input.lower()
+        
+        # Scene-related keywords
         scene_keywords = [
-            "scene",
-            "episode",
-            "moment",
-            "when",
-            "what happened",
-            "how did you",
-            "how did viktor",
-            "what did you do",
-            "what did viktor do",
-            "how did you feel",
-            "how did viktor feel",
-            "jayce",
-            "heimerdinger",
-            "sky",
-            "singed",
-            "hexcore",
-            "hextech",
+            "scene", "episode", "moment", "when you", "remember when",
+            "that time", "that scene", "that moment", "what happened when",
+            "council", "hearing", "progress day", "hextech", "gemstone",
+            "jayce", "laboratory", "workshop", "heimerdinger", "mel", "accident"
         ]
-
-        # Check if any of the keywords are in the user input
-        user_input_lower = user_input.lower()
-        return any(keyword.lower() in user_input_lower for keyword in scene_keywords)
+        
+        # Check for scene keywords
+        for keyword in scene_keywords:
+            if keyword in input_lower:
+                return True
+                
+        return False
 
     def _get_relevant_scene_info(self, user_input: str) -> str:
-        """Get relevant scene information from the character analysis.
+        """Get information about relevant scenes based on the query.
 
         Args:
             user_input: The user's input message.
 
         Returns:
-            Relevant scene information as a string.
+            Information about relevant scenes.
         """
-        # Extract keywords from the user input
-        keywords = self._extract_keywords(user_input)
-
-        # Search the character analysis for each keyword
-        all_results = []
-        for keyword in keywords:
-            results = self.data_loader.search_character_analysis(keyword)
-            all_results.extend(results)
-
-        # Deduplicate results
-        unique_results = []
-        seen_sections = set()
-        for section_title, section_content in all_results:
-            if section_title not in seen_sections:
-                unique_results.append((section_title, section_content))
-                seen_sections.add(section_title)
-
-        # Format the results
-        if unique_results:
-            formatted_results = (
-                "Here is relevant information from my character analysis:\n\n"
+        # Clean the input
+        input_lower = user_input.lower()
+        
+        # Identify potential scene topics
+        topics = []
+        
+        # Check for specific scene keywords
+        scene_topics = {
+            "council": ["council", "hearing", "trial", "decision", "vote"],
+            "lab": ["laboratory", "lab", "workshop", "invention", "experiment"],
+            "hextech": ["hextech", "gemstone", "crystal", "invention", "experiment"],
+            "progress day": ["progress day", "celebration", "demonstration"],
+            "jayce": ["jayce", "partner", "colleague", "friend", "rivalry"],
+            "heimerdinger": ["heimerdinger", "professor", "mentor", "yordle"],
+            "mel": ["mel", "councilor", "medarda", "alliance"],
+            "accident": ["accident", "explosion", "injury", "laboratory accident"]
+        }
+        
+        # Identify relevant topics
+        for topic, keywords in scene_topics.items():
+            for keyword in keywords:
+                if keyword in input_lower:
+                    topics.append(topic)
+                    break
+        
+        # If no specific topics identified, try a general search
+        if not topics:
+            # Extract keywords from the input
+            keywords = self._extract_keywords(user_input)
+            
+            # Use the vector store to find relevant scene information
+            if self.vector_store and keywords:
+                search_query = " ".join(keywords[:5])
+                results = self.vector_store.query(
+                    search_query, 
+                    top_k=3,
+                    filter_fn=lambda doc: "scene" in doc.lower() if isinstance(doc, str) else False
+                )
+                
+                if results:
+                    context_parts = []
+                    for doc, score in results:
+                        # Handle results as tuples of (document, score)
+                        context_parts.append(f"--- Relevant scene information ---\n{doc}")
+                    return "\n\n".join(context_parts)
+        
+        # Use the identified topics to find relevant scenes
+        if topics and self.vector_store:
+            search_query = " ".join(topics)
+            results = self.vector_store.query(
+                search_query, 
+                top_k=3,
+                filter_fn=lambda doc: "scene" in doc.lower() if isinstance(doc, str) else False
             )
-            for section_title, section_content in unique_results[
-                :3
-            ]:  # Limit to top 3 results
-                formatted_results += f"{section_title}\n{section_content}\n\n"
-            return formatted_results
-        else:
-            return "No specific scene information found."
+            
+            if results:
+                context_parts = []
+                for doc, score in results:
+                    # Handle results as tuples of (document, score)
+                    context_parts.append(f"--- Relevant scene information ---\n{doc}")
+                return "\n\n".join(context_parts)
+        
+        # If no results found, return empty context
+        return ""
 
     def _extract_keywords(self, text: str) -> List[str]:
-        """Extract keywords from text.
+        """Extract important keywords from text.
 
         Args:
             text: The text to extract keywords from.
 
         Returns:
-            A list of keywords.
+            List of extracted keywords.
         """
-        # List of common words to exclude
-        stop_words = {
-            "a",
-            "an",
-            "the",
-            "and",
-            "or",
-            "but",
-            "if",
-            "because",
-            "as",
-            "what",
-            "when",
-            "where",
-            "how",
-            "why",
-            "who",
-            "which",
-            "is",
-            "are",
-            "was",
-            "were",
-            "be",
-            "been",
-            "being",
-            "have",
-            "has",
-            "had",
-            "do",
-            "does",
-            "did",
-            "can",
-            "could",
-            "will",
-            "would",
-            "shall",
-            "should",
-            "may",
-            "might",
-            "must",
-            "to",
-            "in",
-            "on",
-            "at",
-            "by",
-            "for",
-            "with",
-            "about",
-            "against",
-            "between",
-            "into",
-            "through",
-            "during",
-            "before",
-            "after",
-            "above",
-            "below",
-            "from",
-            "up",
-            "down",
-            "of",
-            "off",
-            "over",
-            "under",
-            "again",
-            "further",
-            "then",
-            "once",
-            "here",
-            "there",
-            "all",
-            "any",
-            "both",
-            "each",
-            "few",
-            "more",
-            "most",
-            "other",
-            "some",
-            "such",
-            "no",
-            "nor",
-            "not",
-            "only",
-            "own",
-            "same",
-            "so",
-            "than",
-            "too",
-            "very",
-            "s",
-            "t",
-            "just",
-            "don",
-            "now",
-        }
-
-        # Split the text into words
-        words = text.lower().split()
-
-        # Filter out stop words and short words
-        keywords = [word for word in words if word not in stop_words and len(word) > 2]
-
-        # Add specific character names that might be important
-        character_names = ["viktor", "jayce", "heimerdinger", "sky", "singed", "mel"]
-        for name in character_names:
-            if name in text.lower() and name not in keywords:
-                keywords.append(name)
-
-        # Add specific terms related to the show
-        show_terms = ["hextech", "hexcore", "piltover", "zaun", "undercity", "shimmer"]
-        for term in show_terms:
-            if term in text.lower() and term not in keywords:
-                keywords.append(term)
-
-        return keywords
+        # Clean the text
+        text_lower = text.lower()
+        
+        # Remove common stop words
+        stop_words = [
+            "a", "an", "the", "and", "or", "but", "if", "then", "else", "when",
+            "at", "from", "by", "about", "like", "through", "over", "before",
+            "between", "after", "since", "without", "under", "within", "along",
+            "following", "across", "behind", "beyond", "plus", "except", "but",
+            "up", "out", "around", "down", "off", "above", "below", "to", "for",
+            "with", "in", "on", "of", "is", "are", "was", "were", "be", "been",
+            "being", "have", "has", "had", "do", "does", "did", "can", "could",
+            "will", "would", "shall", "should", "may", "might", "must", "i", "you",
+            "he", "she", "it", "we", "they", "me", "him", "her", "us", "them"
+        ]
+        
+        # Tokenize by splitting on spaces and punctuation
+        tokens = []
+        for word in text_lower.split():
+            # Remove punctuation
+            word = ''.join(c for c in word if c.isalnum())
+            if word and word not in stop_words:
+                tokens.append(word)
+        
+        # Return unique tokens
+        return list(dict.fromkeys(tokens))

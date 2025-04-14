@@ -326,4 +326,20 @@ class VectorStore:
             store.use_faiss = False
             return store
         
-        raise FileNotFoundError(f"No vector store found in {folder_path}") 
+        raise FileNotFoundError(f"No vector store found in {folder_path}")
+    
+    def query(self, query: str, top_k: int = 5, filter_fn=None) -> List[Tuple[str, float]]:
+        """Search for similar texts to the query.
+        
+        This is an alias for similarity_search_with_score to maintain compatibility.
+        
+        Args:
+            query: Query text.
+            top_k: Number of results to return.
+            filter_fn: Optional filter function to apply to results (ignored in this implementation).
+            
+        Returns:
+            List of tuples (document, score).
+        """
+        # We ignore the filter_fn parameter since it's not needed for simple implementation
+        return self.similarity_search_with_score(query, k=top_k) 
