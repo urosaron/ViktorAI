@@ -57,5 +57,13 @@ portfolio/
 # Demo and test files
 analyze_json.py
 
+# API and integration files
+viktorai_api.log
+*.log
+.viktor_api_processes.json
+
+# Temporary documentation
+organoids.md
+
 # We're including these files in the repository
 # character_data/ 

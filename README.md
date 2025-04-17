@@ -11,6 +11,8 @@ ViktorAI is a character AI project that:
 - Interfaces with Ollama LLMs to generate responses in Viktor's voice
 - Maintains character consistency throughout conversations
 - Can reference detailed scene analysis for specific queries
+- Integrates with ViktorBrain for neurally-influenced response generation
+- Provides a REST API for chatbot interaction
 
 ## Project Structure
 
@@ -29,11 +31,16 @@ The project is organized into several key components:
 ViktorAI/
 ├── character_data/           # Character analysis files
 ├── src/                      # Source code
+│   ├── api.py                # REST API implementation
+│   ├── brain_client.py       # Client for ViktorBrain integration
+│   ├── viktor_ai.py          # Core AI implementation
+│   └── ...                   # Other source files
 ├── tests/                    # Test code
 ├── model_test_results/       # Model test results
 ├── vector_store/             # Vector database files
 ├── main.py                   # Main entry point
 ├── build_vector_store.py     # Script to build the vector store
+├── Dockerfile.ai             # Docker container definition
 ├── requirements.txt          # Dependencies
 └── everything.md             # Comprehensive documentation
 ```
@@ -44,6 +51,7 @@ ViktorAI/
 
 - Python 3.8 or higher
 - [Ollama](https://ollama.ai/) installed and running locally
+- (Optional) ViktorBrain for neural integration
 
 ### Installation
 
@@ -89,7 +97,7 @@ ViktorAI/
 
 ### Running the Chatbot
 
-To start a conversation with Viktor:
+To start a conversation with Viktor through the command line:
 
 ```bash
 python main.py
@@ -101,11 +109,55 @@ You can customize the LLM model and parameters:
 python main.py --model llama3 --temperature 0.7 --max_tokens 500
 ```
 
+### Starting the API Server
+
+To run the REST API service:
+
+```bash
+uvicorn src.api:app --host 0.0.0.0 --port 8080
+```
+
+Alternatively, you can use the system management script from the ViktorBrain repository:
+
+```bash
+# From ViktorBrain directory
+python scripts/start_system.py start --ai-only
+```
+
+### API Endpoints
+
+The REST API provides these endpoints:
+
+- `GET /`: API status information
+- `POST /chat`: Send a message to Viktor
+- `GET /brain_status`: Check ViktorBrain connection status
+- `POST /reset_brain`: Reset the ViktorBrain connection
+- `GET /model_info`: Get information about the current AI configuration
+
+Example API usage:
+
+```python
+import requests
+
+# Check API status
+response = requests.get("http://localhost:8080/")
+print(response.json())
+
+# Send a chat message
+chat_response = requests.post(
+    "http://localhost:8080/chat",
+    json={"message": "Hello Viktor, what are you working on today?"}
+)
+print(chat_response.json()["response"])
+```
+
 ### Available Command-Line Arguments
 
 - `--model`: The Ollama model to use (default: llama3)
 - `--temperature`: Temperature for response generation (default: 0.7)
 - `--max_tokens`: Maximum tokens for response generation (default: 500)
+- `--use-brain`: Enable ViktorBrain integration (default: True if available)
+- `--brain-api`: ViktorBrain API URL (default: http://localhost:8000)
 
 ### Example Conversation
 
@@ -132,6 +184,46 @@ This command runs all test files in the `tests` directory. The tests verify that
 - Character data loads correctly
 - The RAG system retrieves relevant information
 - The chatbot generates appropriate responses
+
+## Docker Deployment
+
+You can build and run ViktorAI using Docker:
+
+```bash
+# Build the Docker image
+docker build -f Dockerfile.ai -t viktorai .
+
+# Run the container
+docker run -p 8080:8080 viktorai
+```
+
+## Integration with ViktorBrain
+
+ViktorAI can integrate with ViktorBrain to create a neurally-influenced character AI system. This integration:
+
+- Processes user inputs through a simulated neural network
+- Adjusts response parameters based on brain state
+- Provides feedback to the brain based on conversations
+- Creates a more dynamic and contextually aware character
+
+To use this integration:
+
+1. Ensure ViktorBrain is running:
+   ```bash
+   # From ViktorBrain directory
+   python scripts/start_system.py start --brain-only
+   ```
+
+2. Start ViktorAI with brain integration:
+   ```bash
+   python main.py --use-brain
+   ```
+
+Or use the combined system:
+```bash
+# From ViktorBrain directory
+python scripts/start_system.py start
+```
 
 ## Knowledge Boundaries
 

@@ -2,4 +2,8 @@ requests==2.31.0
 pathlib>=1.0.1
 numpy>=1.20.0
 sentence-transformers>=2.2.2
-faiss-cpu>=1.7.0  # Optional, for faster vector search 
+faiss-cpu>=1.7.0  # Optional, for faster vector search
+fastapi>=0.103.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+torch>=2.0.0  # For response classifier 
